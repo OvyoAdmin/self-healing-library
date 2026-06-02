@@ -1,0 +1,16 @@
+Problem Statement:
+	In web UI-based test automation (such as for the Homeview application), test failures frequently occur after every new release. These failures are mainly due to changes in the UI, such as the addition, deletion, or modification of elements, or due to differences in layout or structure across environments. As a result, test maintenance becomes a time-consuming task, slowing down release cycles and increasing manual effort.
+
+Solution:
+	To address this, we have integrated the Homeview test automation framework with an AI-powered healing engine.
+	When a test case during test execution, the system automatically:
+		Detects the failure,
+		Sends page information to a local LLM (AI model),
+		Receives and validates AI-generated alternative fix,
+		Automatically updates the locator in the codebase,  adapting to the new UI in real time.
+	This eliminates the need for manual intervention during most UI changes, significantly improving test reliability and execution continuity across releases.
+
+Additional Features:
+	Every step of the process — from the test failure, AI healing request, and suggested code changes, to screenshots and validation results — is recorded in detailed execution logs for traceability.
+	The next enhancement under development will enable the framework to automatically create a Merge Request (MR) in the repository once healed locators are verified, reducing 2–3 days of manual analysis and update work per release.
+	Future versions will extend this self-healing capability to mobile automation using Appium, creating a unified AI-driven test automation ecosystem.
