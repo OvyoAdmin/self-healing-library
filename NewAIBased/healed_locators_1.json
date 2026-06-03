@@ -26,7 +26,7 @@
   "//input[@name=\"usernam\"]": {
     "current": {
       "type": "id",
-      "locator": "id=username",
+      "locator": "name=usernamee",
       "updated_at": "2025-10-09T14:30:42.417917"
     },
     "history": []
@@ -34,12 +34,12 @@
   "id=user_name": {
     "current": {
       "type": "id",
-      "locator": "id=username",
+      "locator": "name=usernamee",
       "updated_at": "2025-10-09T14:56:27.699599"
     },
     "history": []
   },
-  "id=usernames": {
+  "name=usernamees": {
     "current": {
       "type": "id",
       "locator": "id=login",
@@ -47,7 +47,7 @@
     },
     "history": []
   },
-  "id=usernamess": {
+  "name=usernameess": {
     "current": {
       "type": "name",
       "locator": "name=username",
@@ -90,7 +90,7 @@
   "//button[@type=submit]": {
     "current": {
       "type": "xpath",
-      "locator": "xpath=//button[@type='submit']",
+      "locator": "xpath=name=login",
       "updated_at": "2026-01-29T22:12:30.945735"
     },
     "history": []
@@ -103,7 +103,7 @@
     },
     "history": []
   },
-  "id=username": {
+  "name=usernamee": {
     "current": {
       "type": "xpath",
       "locator": "xpath=//input[@id='username']",

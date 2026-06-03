@@ -62,5 +62,37 @@
       "updated_at": "2026-04-21T20:59:52.548166"
     },
     "history": []
+  },
+  "//button[@type='submit']": {
+    "current": {
+      "type": "name",
+      "locator": "name=login",
+      "updated_at": "2026-06-02T23:12:27.509236"
+    },
+    "history": []
+  },
+  "id=\"usernam\"": {
+    "current": {
+      "type": "name",
+      "locator": "name=username",
+      "updated_at": "2026-06-03T13:50:33.320988"
+    },
+    "history": []
+  },
+  "id=usernam": {
+    "current": {
+      "type": "name",
+      "locator": "name=username",
+      "updated_at": "2026-06-03T13:52:52.397875"
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"usernam\"]": {
+    "current": {
+      "type": "name",
+      "locator": "name=username",
+      "updated_at": "2026-06-03T14:23:05.906109"
+    },
+    "history": []
   }
 }
