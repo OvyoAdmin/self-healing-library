@@ -47,7 +47,7 @@ Colour CSV To Variable
 Verify login with valid credentials
     [Tags]    HappyCase    TC_1
     [Documentation]    Verify login with valid credentials
-    Input Text    xpath=//input[@id="username"]    tomsmith
+    Input Text    id=username    tomsmith
     Input Text    xpath=//input[@id="password"]    SuperSecretPassword!
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash success"]    10
@@ -58,7 +58,7 @@ Verify login with invalid username
     [Documentation]    Verify login with invalid username
     [Tags]    TC_2
     Input Text    xpath=//input[@id="username"]    user@name.com
-    Input Text    xpath=//input[@id="password"]    SuperSecretPassword!
+    Input Text    id=password    SuperSecretPassword!
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10
     Element Should Be Visible    xpath=//div[@class="flash error"]
@@ -66,8 +66,8 @@ Verify login with invalid username
 Verify login with invalid password
     [Documentation]    Verify login with invalid password
     [Tags]    TC_3
-    Input Text    xpath=//input[@id="username"]    tomsmith
-    Input Text    xpath=//input[@id="password"]    Password
+    Input Text    id=username    tomsmith
+    Input Text    id=password    Password
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10
     Element Should Be Visible    xpath=//div[@class="flash error"]
@@ -76,7 +76,7 @@ Verify login with both invalid username and password
     [Documentation]    Verify login with both invalid username and password
     [Tags]    TC_4
     Input Text    xpath=//input[@id="username"]    user@name.com
-    Input Text    xpath=//input[@id="password"]    Password
+    Input Text    id=password    Password
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10
     Element Should Be Visible    xpath=//div[@class="flash error"]
@@ -94,7 +94,7 @@ Verify login with empty username only
     [Documentation]    Verify login with empty username only
     [Tags]    TC_6
     Clear Element Text    xpath=//input[@id="username"]
-    Input Text    xpath=//input[@id="password"]    SuperSecretPassword!
+    Input Text    id=password    SuperSecretPassword!
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10
     Element Should Be Visible    xpath=//div[@class="flash error"]
@@ -102,7 +102,7 @@ Verify login with empty username only
 Verify login with empty password only
     [Documentation]    Verify login with invalid username
     [Tags]    TC_7
-    Input Text    xpath=//input[@id="username"]    user@name.com
+    Input Text    id=username    user@name.com
     Clear Element Text    xpath=//input[@id="password"]
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10
@@ -118,8 +118,8 @@ Verify password masking
 Verify logout functionality
     [Documentation]    Verify logout functionality
     [Tags]    TC_9
-    Input Text    xpath=//input[@id="username"]    tomsmith
-    Input Text    xpath=//input[@id="password"]    SuperSecretPassword!
+    Input Text    id=username    tomsmith
+    Input Text    id=password    SuperSecretPassword!
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash success"]    10
     Element Should Be Visible    xpath=//div[@class="flash success"]
@@ -128,7 +128,7 @@ Verify logout functionality
 Verify SQL Injection attempt
     [Documentation]    Verify SQL Injection attempt
     [Tags]    TC_10
-    Input Text    xpath=//input[@id="username"]    ' OR '1'='1
+    Input Text    id=username    ' OR '1'='1
     Input Text    xpath=//input[@id="password"]    ' OR '1'='1
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10

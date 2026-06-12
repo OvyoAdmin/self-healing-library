@@ -94,5 +94,3662 @@
       "updated_at": "2026-06-03T14:23:05.906109"
     },
     "history": []
+  },
+  "xpath=//input[@id=\"pssword\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-04T14:20:13.306077",
+      "score": 120,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"pssword\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 120,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "AI confidence 1.00",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": "The input element with id 'password' matches the provided keyword 'pssword'.",
+          "ai_confidence": 1.0,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 120,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "AI confidence 1.00",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": "The input element with id 'password' matches the provided keyword 'pssword'.",
+            "ai_confidence": 1.0,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "id",
+            "locator": "id=password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "snapshot-current",
+            "ai_reason": "previously healed locator from snapshot-current",
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          }
+        ],
+        "candidate_count": 2,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 1,
+        "history_candidate_count": 1,
+        "previous_heal_context": {
+          "requested_locator": "xpath=//input[@id=\"pssword\"]",
+          "snapshot_matches": [
+            {
+              "old_locator": "xpath=//input[@id=\"pssword\"]",
+              "current": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": "2026-06-03T16:16:16.032842",
+                "source": "snapshot-current",
+                "score": 115
+              },
+              "history": []
+            }
+          ],
+          "audit_events": [
+            {
+              "ts": "2026-04-21T18:27:42.465061",
+              "event": "heal",
+              "old_locator": "//input[@id=\"passwor\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-03T16:16:16.033755",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"pssword\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-03T16:16:16.046928",
+              "event": "rewrite",
+              "old_locator": "xpath=//input[@id=\"pssword\"]",
+              "new": null
+            }
+          ]
+        }
+      }
+    },
+    "history": [
+      {
+        "type": "id",
+        "locator": "id=password",
+        "updated_at": "2026-06-03T16:16:16.032842",
+        "score": 115,
+        "score_report": {
+          "old_locator": "xpath=//input[@id=\"pssword\"]",
+          "selected": {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          "candidates": [
+            {
+              "rank_from_ai": 1,
+              "type": "id",
+              "locator": "password",
+              "normalized_locator": "id=password",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 115,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable id selector",
+                "id appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 1
+            },
+            {
+              "rank_from_ai": 2,
+              "type": "name",
+              "locator": "password",
+              "normalized_locator": "name=password",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 111,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable name selector",
+                "name appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 2
+            },
+            {
+              "rank_from_ai": 3,
+              "type": "css",
+              "locator": "#login input[name='password']",
+              "normalized_locator": "css:#login input[name='password']",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 91,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "CSS selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 3
+            },
+            {
+              "rank_from_ai": 4,
+              "type": "xpath",
+              "locator": "//input[@name='password']",
+              "normalized_locator": "xpath=//input[@name='password']",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 89,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "XPath selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 4
+            }
+          ],
+          "candidate_count": 4,
+          "html_chars_used": 1663,
+          "dom_library_counts": {
+            "ariaLabels": 0,
+            "cssClasses": 17,
+            "dataTest": 0,
+            "ids": 6,
+            "names": 4,
+            "roles": 0,
+            "texts": 12
+          },
+          "requirements": {
+            "visible": false,
+            "unique": false,
+            "retries": 3,
+            "interval_ms": 150
+          }
+        }
+      }
+    ]
+  },
+  "xpath=//input[@id=\"usernamse\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-03T21:35:23.384070",
+      "score": 120,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"usernamse\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 120,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "AI confidence 1.00",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": "present in ids array",
+          "ai_confidence": 1.0,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 120,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "AI confidence 1.00",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": "present in ids array",
+            "ai_confidence": 1.0,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 116,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "AI confidence 1.00",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": "present in names array",
+            "ai_confidence": 1.0,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "id",
+            "locator": "id=username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "snapshot-current",
+            "ai_reason": "previously healed locator from snapshot-current",
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "[data-test=\"username\"]",
+            "normalized_locator": "css:[data-test=\"username\"]",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "AI confidence 0.80",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": "not present in DOM library but could be a data-testid",
+            "ai_confidence": 0.8,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 3,
+        "history_candidate_count": 1,
+        "previous_heal_context": {
+          "requested_locator": "xpath=//input[@id=\"usernamse\"]",
+          "snapshot_matches": [
+            {
+              "old_locator": "xpath=//input[@id=\"usernamse\"]",
+              "current": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": "2026-06-03T21:33:07.795866",
+                "source": "snapshot-current",
+                "score": 115
+              },
+              "history": []
+            }
+          ],
+          "audit_events": [
+            {
+              "ts": "2026-06-03T21:33:07.796881",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"usernamse\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-03T21:33:07.808920",
+              "event": "rewrite",
+              "old_locator": "xpath=//input[@id=\"usernamse\"]",
+              "new": null
+            }
+          ]
+        },
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260603_213523_401239__healed__xpath_input_id_usernamse_.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260603_213523_401239__healed__xpath_input_id_usernamse_.json"
+        }
+      }
+    },
+    "history": [
+      {
+        "type": "id",
+        "locator": "id=username",
+        "updated_at": "2026-06-03T21:33:07.795866",
+        "score": 115,
+        "score_report": {
+          "old_locator": "xpath=//input[@id=\"usernamse\"]",
+          "selected": {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          "candidates": [
+            {
+              "rank_from_ai": 1,
+              "type": "id",
+              "locator": "username",
+              "normalized_locator": "id=username",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 115,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable id selector",
+                "id appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 1
+            },
+            {
+              "rank_from_ai": 2,
+              "type": "name",
+              "locator": "username",
+              "normalized_locator": "name=username",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 111,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable name selector",
+                "name appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 2
+            },
+            {
+              "rank_from_ai": 3,
+              "type": "css",
+              "locator": "#login input[name='username']",
+              "normalized_locator": "css:#login input[name='username']",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 91,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "CSS selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 3
+            },
+            {
+              "rank_from_ai": 4,
+              "type": "css",
+              "locator": "[data-test='username']",
+              "normalized_locator": "css:[data-test='username']",
+              "ok": false,
+              "exists": false,
+              "visible": false,
+              "unique": false,
+              "count": 0,
+              "visible_count": 0,
+              "score": 10,
+              "reasons": [
+                "not found in live DOM",
+                "stable data-test selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 4
+            }
+          ],
+          "candidate_count": 4,
+          "html_chars_used": 1777,
+          "dom_library_counts": {
+            "ariaLabels": 0,
+            "cssClasses": 20,
+            "dataTest": 0,
+            "ids": 7,
+            "names": 4,
+            "roles": 0,
+            "texts": 14
+          },
+          "requirements": {
+            "visible": false,
+            "unique": false,
+            "retries": 3,
+            "interval_ms": 150
+          },
+          "ai_candidate_count": 4,
+          "history_candidate_count": 0
+        }
+      }
+    ]
+  },
+  "xpath=//input[@id=\"usernames\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-03T21:35:30.698874",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"usernames\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='usernames']",
+            "normalized_locator": "css:[data-test='usernames']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "matches broken-locator hints: usernames",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"usdername\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-04T14:26:13.079495",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"usdername\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='username']",
+            "normalized_locator": "css:[data-test='username']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"usernamef\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-04T15:17:59.598549",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"usernamef\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='username']",
+            "normalized_locator": "css:[data-test='username']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"passsword\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-04T19:03:20.527583",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"passsword\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "id",
+            "locator": "id=password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "snapshot-current",
+            "ai_reason": "previously healed locator from snapshot-current",
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "xpath",
+            "locator": "//input[@id='password']",
+            "normalized_locator": "xpath=//input[@id='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 89,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "XPath selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "css",
+            "locator": ".foundation-mq-large #password",
+            "normalized_locator": "css:.foundation-mq-large #password",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "CSS class appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 3,
+        "history_candidate_count": 1,
+        "previous_heal_context": {
+          "requested_locator": "xpath=//input[@id=\"passsword\"]",
+          "snapshot_matches": [
+            {
+              "old_locator": "xpath=//input[@id=\"passsword\"]",
+              "current": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": "2026-06-04T18:33:35.076591",
+                "source": "snapshot-current",
+                "score": 115
+              },
+              "history": []
+            }
+          ],
+          "audit_events": [
+            {
+              "ts": "2026-04-21T18:27:42.465061",
+              "event": "heal",
+              "old_locator": "//input[@id=\"passwor\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-03T16:16:16.033755",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"pssword\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T14:20:13.307652",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"pssword\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T18:33:35.078907",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"passsword\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T18:33:35.095938",
+              "event": "rewrite",
+              "old_locator": "xpath=//input[@id=\"passsword\"]",
+              "new": null
+            },
+            {
+              "ts": "2026-06-04T18:33:51.416945",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"padssword\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=password",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            }
+          ]
+        },
+        "healing_event_count": 1,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_190320_546661__healed__xpath_input_id_passsword_.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_190320_546661__healed__xpath_input_id_passsword_.json"
+        }
+      }
+    },
+    "history": [
+      {
+        "type": "id",
+        "locator": "id=password",
+        "updated_at": "2026-06-04T18:33:35.076591",
+        "score": 115,
+        "score_report": {
+          "old_locator": "xpath=//input[@id=\"passsword\"]",
+          "selected": {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          "candidates": [
+            {
+              "rank_from_ai": 1,
+              "type": "id",
+              "locator": "password",
+              "normalized_locator": "id=password",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 115,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable id selector",
+                "id appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 1
+            },
+            {
+              "rank_from_ai": 2,
+              "type": "name",
+              "locator": "password",
+              "normalized_locator": "name=password",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 111,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable name selector",
+                "name appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 2
+            },
+            {
+              "rank_from_ai": 3,
+              "type": "css",
+              "locator": "#login input[name='password']",
+              "normalized_locator": "css:#login input[name='password']",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 91,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "CSS selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 3
+            },
+            {
+              "rank_from_ai": 4,
+              "type": "xpath",
+              "locator": "//input[@name='password']",
+              "normalized_locator": "xpath=//input[@name='password']",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 89,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "XPath selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 4
+            }
+          ],
+          "candidate_count": 4,
+          "html_chars_used": 1788,
+          "dom_library_counts": {
+            "ariaLabels": 0,
+            "cssClasses": 20,
+            "dataTest": 0,
+            "ids": 7,
+            "names": 4,
+            "roles": 0,
+            "texts": 14
+          },
+          "requirements": {
+            "visible": false,
+            "unique": false,
+            "retries": 3,
+            "interval_ms": 150
+          },
+          "ai_candidate_count": 4,
+          "history_candidate_count": 0,
+          "healing_event_count": 1,
+          "healing_report_paths": {
+            "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_183335_096860__healed__xpath_input_id_passsword_.html",
+            "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_183335_096860__healed__xpath_input_id_passsword_.json"
+          }
+        }
+      }
+    ]
+  },
+  "id=usdername": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-04T18:33:42.492164",
+      "score": 115,
+      "score_report": {
+        "old_locator": "id=usdername",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='username']",
+            "normalized_locator": "css:[data-test='username']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1788,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0,
+        "healing_event_count": 2,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_183342_510900__healed__id_usdername.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_183342_510900__healed__id_usdername.json"
+        }
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"padssword\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-04T18:33:51.414459",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"padssword\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "password",
+            "normalized_locator": "name=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='password']",
+            "normalized_locator": "css:#login input[name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "xpath",
+            "locator": "//input[@name='password']",
+            "normalized_locator": "xpath=//input[@name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 89,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "XPath selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"pasxsword\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-04T19:03:30.655862",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"pasxsword\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "password",
+            "normalized_locator": "name=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='password']",
+            "normalized_locator": "css:#login input[name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "xpath",
+            "locator": "//input[@name='password']",
+            "normalized_locator": "xpath=//input[@name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 89,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "XPath selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0,
+        "healing_event_count": 2,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_190330_677712__healed__xpath_input_id_pasxsword_.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260604_190330_677712__healed__xpath_input_id_pasxsword_.json"
+        }
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"userxname\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-04T19:03:38.116063",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"userxname\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='userxname']",
+            "normalized_locator": "css:[data-test='userxname']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "matches broken-locator hints: userxname",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"ussername\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-08T06:42:33.950979",
+      "score": 120,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"ussername\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 120,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "AI confidence 1.00",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": "present in ids array",
+          "ai_confidence": 1.0,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 120,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "AI confidence 1.00",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": "present in ids array",
+            "ai_confidence": 1.0,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "id",
+            "locator": "id=username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "snapshot-current",
+            "ai_reason": "previously healed locator from snapshot-current",
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          }
+        ],
+        "candidate_count": 2,
+        "html_chars_used": 1663,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 17,
+          "dataTest": 0,
+          "ids": 6,
+          "names": 4,
+          "roles": 0,
+          "texts": 12
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 1,
+        "history_candidate_count": 1,
+        "previous_heal_context": {
+          "requested_locator": "xpath=//input[@id=\"ussername\"]",
+          "snapshot_matches": [
+            {
+              "old_locator": "xpath=//input[@id=\"ussername\"]",
+              "current": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": "2026-06-07T22:56:17.181743",
+                "source": "snapshot-current",
+                "score": 115
+              },
+              "history": []
+            }
+          ],
+          "audit_events": [
+            {
+              "ts": "2026-06-03T21:33:07.796881",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"usernamse\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-03T21:35:23.385141",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"usernamse\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-03T21:35:30.700308",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"usernames\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T14:26:13.082052",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"usdername\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T15:17:59.601009",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"usernamef\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T18:33:42.494407",
+              "event": "heal",
+              "old_locator": "id=usdername",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-04T19:03:38.118844",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"userxname\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-07T22:56:17.185006",
+              "event": "heal",
+              "old_locator": "xpath=//input[@id=\"ussername\"]",
+              "new": {
+                "type": "id",
+                "locator": "id=username",
+                "updated_at": null,
+                "source": "audit-new",
+                "score": null
+              }
+            },
+            {
+              "ts": "2026-06-07T22:56:17.201967",
+              "event": "rewrite",
+              "old_locator": "xpath=//input[@id=\"ussername\"]",
+              "new": null
+            }
+          ]
+        },
+        "healing_event_count": 1,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260608_064233_972251__healed__xpath_input_id_ussername_.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260608_064233_972251__healed__xpath_input_id_ussername_.json"
+        }
+      }
+    },
+    "history": [
+      {
+        "type": "id",
+        "locator": "id=username",
+        "updated_at": "2026-06-07T22:56:17.181743",
+        "score": 115,
+        "score_report": {
+          "old_locator": "xpath=//input[@id=\"ussername\"]",
+          "selected": {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          "candidates": [
+            {
+              "rank_from_ai": 1,
+              "type": "id",
+              "locator": "username",
+              "normalized_locator": "id=username",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 115,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "stable id selector",
+                "id appears in DOM library",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 1
+            },
+            {
+              "rank_from_ai": 2,
+              "type": "css",
+              "locator": "#login input[type='text']",
+              "normalized_locator": "css:#login input[type='text']",
+              "ok": true,
+              "exists": true,
+              "visible": true,
+              "unique": true,
+              "count": 1,
+              "visible_count": 1,
+              "score": 91,
+              "reasons": [
+                "exists in live DOM",
+                "has visible match",
+                "unique match",
+                "CSS selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 2
+            },
+            {
+              "rank_from_ai": 3,
+              "type": "css",
+              "locator": "[data-test='username']",
+              "normalized_locator": "css:[data-test='username']",
+              "ok": false,
+              "exists": false,
+              "visible": false,
+              "unique": false,
+              "count": 0,
+              "visible_count": 0,
+              "score": 10,
+              "reasons": [
+                "not found in live DOM",
+                "stable data-test selector",
+                "visible text appears in DOM library",
+                "compact selector"
+              ],
+              "source": "ai",
+              "ai_reason": null,
+              "ai_confidence": null,
+              "error": null,
+              "score_rank": 3
+            }
+          ],
+          "candidate_count": 3,
+          "html_chars_used": 1777,
+          "dom_library_counts": {
+            "ariaLabels": 0,
+            "cssClasses": 20,
+            "dataTest": 0,
+            "ids": 7,
+            "names": 4,
+            "roles": 0,
+            "texts": 14
+          },
+          "requirements": {
+            "visible": false,
+            "unique": false,
+            "retries": 3,
+            "interval_ms": 150
+          },
+          "ai_candidate_count": 3,
+          "history_candidate_count": 0
+        }
+      }
+    ]
+  },
+  "id=usesrname": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-08T06:42:42.410661",
+      "score": 115,
+      "score_report": {
+        "old_locator": "id=usesrname",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='username']",
+            "normalized_locator": "css:[data-test='username']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0,
+        "healing_event_count": 2,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260608_064242_431677__healed__id_usesrname.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260608_064242_431677__healed__id_usesrname.json"
+        }
+      }
+    },
+    "history": []
+  },
+  "id=passsword": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-08T06:42:49.879877",
+      "score": 115,
+      "score_report": {
+        "old_locator": "id=passsword",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "password",
+            "normalized_locator": "name=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='password']",
+            "normalized_locator": "css:#login input[name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "xpath",
+            "locator": "//input[@name='password']",
+            "normalized_locator": "xpath=//input[@name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 89,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "XPath selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "id=passwosrd": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-10T16:18:20.044985",
+      "score": 115,
+      "score_report": {
+        "old_locator": "id=passwosrd",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "password",
+            "normalized_locator": "name=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='password']",
+            "normalized_locator": "css:#login input[name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='password']",
+            "normalized_locator": "css:[data-test='password']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1788,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0,
+        "healing_event_count": 1,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260610_161820_076376__healed__id_passwosrd.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260610_161820_076376__healed__id_passwosrd.json"
+        }
+      }
+    },
+    "history": []
+  },
+  "id=userndame": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-10T16:18:27.488406",
+      "score": 115,
+      "score_report": {
+        "old_locator": "id=userndame",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='username']",
+            "normalized_locator": "css:[data-test='username']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1788,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0,
+        "healing_event_count": 2,
+        "healing_report_paths": {
+          "html": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260610_161827_517870__healed__id_userndame.html",
+          "json": "/Users/febinthomas/Documents/OvyoSelfHealing/self-healing-library/NewAIBased/output/healing_reports/20260610_161827_517870__healed__id_userndame.json"
+        }
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"userndame\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=username",
+      "updated_at": "2026-06-10T16:18:37.041112",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"userndame\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "username",
+          "normalized_locator": "id=username",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "username",
+            "normalized_locator": "id=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "username",
+            "normalized_locator": "name=username",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='username']",
+            "normalized_locator": "css:#login input[name='username']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "css",
+            "locator": "[data-test='username']",
+            "normalized_locator": "css:[data-test='username']",
+            "ok": false,
+            "exists": false,
+            "visible": false,
+            "unique": false,
+            "count": 0,
+            "visible_count": 0,
+            "score": 10,
+            "reasons": [
+              "not found in live DOM",
+              "stable data-test selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
+  },
+  "xpath=//input[@id=\"pasdsword\"]": {
+    "current": {
+      "type": "id",
+      "locator": "id=password",
+      "updated_at": "2026-06-11T07:14:12.565910",
+      "score": 115,
+      "score_report": {
+        "old_locator": "xpath=//input[@id=\"pasdsword\"]",
+        "selected": {
+          "rank_from_ai": 1,
+          "type": "id",
+          "locator": "password",
+          "normalized_locator": "id=password",
+          "ok": true,
+          "exists": true,
+          "visible": true,
+          "unique": true,
+          "count": 1,
+          "visible_count": 1,
+          "score": 115,
+          "reasons": [
+            "exists in live DOM",
+            "has visible match",
+            "unique match",
+            "stable id selector",
+            "id appears in DOM library",
+            "visible text appears in DOM library",
+            "compact selector"
+          ],
+          "source": "ai",
+          "ai_reason": null,
+          "ai_confidence": null,
+          "error": null,
+          "score_rank": 1
+        },
+        "candidates": [
+          {
+            "rank_from_ai": 1,
+            "type": "id",
+            "locator": "password",
+            "normalized_locator": "id=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 115,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable id selector",
+              "id appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 1
+          },
+          {
+            "rank_from_ai": 2,
+            "type": "name",
+            "locator": "password",
+            "normalized_locator": "name=password",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 111,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "stable name selector",
+              "name appears in DOM library",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 2
+          },
+          {
+            "rank_from_ai": 3,
+            "type": "css",
+            "locator": "#login input[name='password']",
+            "normalized_locator": "css:#login input[name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 91,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "CSS selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 3
+          },
+          {
+            "rank_from_ai": 4,
+            "type": "xpath",
+            "locator": "//input[@name='password']",
+            "normalized_locator": "xpath=//input[@name='password']",
+            "ok": true,
+            "exists": true,
+            "visible": true,
+            "unique": true,
+            "count": 1,
+            "visible_count": 1,
+            "score": 89,
+            "reasons": [
+              "exists in live DOM",
+              "has visible match",
+              "unique match",
+              "XPath selector",
+              "visible text appears in DOM library",
+              "compact selector"
+            ],
+            "source": "ai",
+            "ai_reason": null,
+            "ai_confidence": null,
+            "error": null,
+            "score_rank": 4
+          }
+        ],
+        "candidate_count": 4,
+        "html_chars_used": 1777,
+        "dom_library_counts": {
+          "ariaLabels": 0,
+          "cssClasses": 20,
+          "dataTest": 0,
+          "ids": 7,
+          "names": 4,
+          "roles": 0,
+          "texts": 14
+        },
+        "requirements": {
+          "visible": false,
+          "unique": false,
+          "retries": 3,
+          "interval_ms": 150
+        },
+        "ai_candidate_count": 4,
+        "history_candidate_count": 0
+      }
+    },
+    "history": []
   }
 }

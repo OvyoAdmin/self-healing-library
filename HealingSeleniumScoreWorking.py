@@ -49,10 +49,6 @@ HEALING_VALIDATE_RETRY_INTERVAL_MS default: 150
 HEALING_CAPTURE_ON_FAIL      default: true
 HEALING_SAVE_HTML_ON_FAIL    default: false
 HEALING_ARTIFACT_DIR         default: healing_screens (under ${OUTPUT DIR})
-HEALING_ALLURE_REPORT        default: true
-HEALING_ALLURE_SUMMARY       default: true
-HEALING_ALLURE_RESULTS_DIR   default: ${OUTPUT DIR}/allure (for environment.properties only)
-HEALING_REPORT_DIR           default: healing_reports (under ${OUTPUT DIR})
 
 # Browser safety nets (optional defaults used by Ensure Browser Open)
 HEALING_DEFAULT_URL          default: about:blank
@@ -83,7 +79,6 @@ Heals-Rewrites-Then-Fails
     Print Locator Library
 """
 from __future__ import annotations
-import csv
 import fnmatch
 import glob
 import inspect
@@ -106,7 +101,6 @@ class HealingSelenium:
     # Keep scope GLOBAL to be consistent with SeleniumLibrary and avoid multi-instance surprises
     ROBOT_LIBRARY_SCOPE = "GLOBAL"
     ROBOT_LIBRARY_VERSION = "2.1.0"
-    ROBOT_LISTENER_API_VERSION = 3
 
     # ------------------------------ Initialization ------------------------------
     def __init__(  # noqa: PLR0913
@@ -146,8 +140,6 @@ class HealingSelenium:
 
         # Failure artifact toggle
         self.capture_on_fail = self._arg_or_env_bool(None, "HEALING_CAPTURE_ON_FAIL", True)
-        self.allure_report = self._arg_or_env_bool(None, "HEALING_ALLURE_REPORT", True)
-        self.allure_summary = self._arg_or_env_bool(None, "HEALING_ALLURE_SUMMARY", True)
 
         # NEW: fail policy
         self.fail_on_heal = self._arg_or_env_bool(None, "HEALING_FAIL_ON_HEAL", True)
@@ -171,10 +163,6 @@ class HealingSelenium:
 
         # State
         self.healed_locators = self._load_healed_locators()
-        self.healing_event_count = 0
-        self.healing_events: List[Dict[str, Any]] = []
-        self.test_stats = {"executed": 0, "passed": 0, "failed": 0, "skipped": 0}
-        self.ROBOT_LIBRARY_LISTENER = self
 
         # Build keyword map (overrides + utilities)
         self._init_custom_keyword_map()
@@ -190,9 +178,6 @@ class HealingSelenium:
             f"[HealingSelenium] Capture-On-Fail:{self.capture_on_fail} "
             f"Fail-On-Heal:{self.fail_on_heal} Fail-After-Rewrite:{self.fail_after_rewrite}\n"
             f"Artifacts dir:{os.getenv('HEALING_ARTIFACT_DIR', 'healing_screens')}\n"
-            f"[HealingSelenium] Allure-Report:{self.allure_report} "
-            f"Allure-Summary:{self.allure_summary} "
-            f"Report dir:{os.getenv('HEALING_REPORT_DIR', 'healing_reports')}\n"
             f"[HealingSelenium] Defaults → url:{self.default_url} browser:{self.default_browser}\n"
         )
 
@@ -253,31 +238,6 @@ class HealingSelenium:
             return func(*args, **kwargs)
         # Proxy to internal SeleniumLibrary instance
         return self._sl.run_keyword(name, args, kwargs)
-
-    # -------------------------- Robot listener summary hooks --------------------------
-    def end_test(self, *args):
-        """
-        Robot listener hook. Tracks real test status counts so healing summaries can
-        show executed/passed/failed/skipped without creating fake Allure test cases.
-        """
-        try:
-            result = args[-1] if args else None
-            status = str(getattr(result, "status", "") or "").upper()
-            if not status and len(args) >= 2 and isinstance(args[1], dict):
-                status = str(args[1].get("status", "")).upper()
-            if not status:
-                return
-            self.test_stats["executed"] += 1
-            if status == "PASS":
-                self.test_stats["passed"] += 1
-            elif status == "SKIP":
-                self.test_stats["skipped"] += 1
-            else:
-                self.test_stats["failed"] += 1
-            self._write_healing_run_summary()
-            self._write_healing_environment_summary()
-        except Exception as exc:
-            print(f"[Healing] Listener test summary update failed: {exc}")
 
     def get_keyword_documentation(self, name: str) -> str:
         """Return keyword documentation"""
@@ -711,8 +671,6 @@ class HealingSelenium:
         out: Dict[str, Any] = {"type": typ, "locator": str(loc).strip()}
         if raw.get("reason"):
             out["reason"] = str(raw.get("reason"))[:300]
-        if raw.get("source"):
-            out["source"] = str(raw.get("source"))[:80]
 
         confidence = raw.get("confidence", raw.get("score"))
         if confidence is not None:
@@ -933,7 +891,6 @@ class HealingSelenium:
             "visible_count": visible_count,
             "score": max(0, int(score)),
             "reasons": reasons[:12],
-            "source": candidate.get("source") or "ai",
             "ai_reason": candidate.get("reason"),
             "ai_confidence": candidate.get("ai_confidence"),
             "error": error,
@@ -975,11 +932,6 @@ class HealingSelenium:
     def _print_locator_score_report(self, score_report: Dict[str, Any]):
         """Print a compact score report into Robot logs/console."""
         print("\n==== Locator Candidate Score Report ====")
-        print(
-            f"Candidates: total={score_report.get('candidate_count')} "
-            f"ai={score_report.get('ai_candidate_count', 0)} "
-            f"history={score_report.get('history_candidate_count', 0)}"
-        )
         selected = score_report.get("selected") or {}
         selected_norm = selected.get("normalized_locator")
         for item in score_report.get("candidates", []):
@@ -987,7 +939,7 @@ class HealingSelenium:
             print(
                 f"{mark} rank={item.get('score_rank')} score={item.get('score')} ok={item.get('ok')} "
                 f"count={item.get('count')} visible={item.get('visible_count')} "
-                f"source={item.get('source')} locator={item.get('normalized_locator')}"
+                f"locator={item.get('normalized_locator')}"
             )
             reason_line = "; ".join(item.get("reasons") or [])
             if reason_line:
@@ -1001,510 +953,6 @@ class HealingSelenium:
         else:
             print("[Healing] No AI candidate passed live DOM validation/scoring requirements.")
         print("========================================\n")
-
-    def _html_escape(self, value: Any) -> str:
-        text = "" if value is None else str(value)
-        return (
-            text.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
-
-    def _healing_report_dir(self) -> str:
-        out_dir = os.path.join(
-            self._get_output_dir(),
-            os.getenv("HEALING_REPORT_DIR", "healing_reports"),
-        )
-        os.makedirs(out_dir, exist_ok=True)
-        return out_dir
-
-    def _build_healing_report_html(
-        self,
-        old_locator: str,
-        new_locator: str,
-        score_report: Dict[str, Any],
-        rewrite_stats: Optional[Dict[str, Any]],
-    ) -> str:
-        selected = score_report.get("selected") or {}
-        selected_norm = selected.get("normalized_locator") or new_locator
-        score = selected.get("score", "")
-        ai_count = score_report.get("ai_candidate_count", 0)
-        history_count = score_report.get("history_candidate_count", 0)
-        total_count = score_report.get("candidate_count", 0)
-
-        rows: List[str] = []
-        for item in score_report.get("candidates", []):
-            row_cls = "selected" if item.get("normalized_locator") == selected_norm and item.get("ok") else ""
-            reasons = "<br>".join(self._html_escape(r) for r in (item.get("reasons") or []))
-            rows.append(
-                "<tr class=\"%s\">"
-                "<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
-                "</tr>"
-                % (
-                    row_cls,
-                    self._html_escape(item.get("score_rank")),
-                    self._html_escape(item.get("score")),
-                    self._html_escape(item.get("ok")),
-                    self._html_escape(item.get("count")),
-                    self._html_escape(item.get("source")),
-                    self._html_escape(item.get("normalized_locator")),
-                    reasons,
-                )
-            )
-
-        if rewrite_stats is None:
-            rewrite_text = "No source rewrite performed."
-            rewrite_class = "muted"
-        else:
-            rewrite_text = (
-                f"{rewrite_stats.get('files_changed', 0)} file(s), "
-                f"{rewrite_stats.get('occurrences_replaced', 0)} occurrence(s)"
-                f"{' - dry run' if rewrite_stats.get('dry_run') else ''}"
-            )
-            rewrite_class = "ok" if rewrite_stats.get("files_changed", 0) else "muted"
-
-        generated_at = self._iso_now()
-        return f"""<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body {{ margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #18202a; background: #f6f8fb; }}
-    .wrap {{ padding: 18px; }}
-    .heal-bar {{ border-left: 8px solid #13a66b; background: #e9fbf3; padding: 16px 18px; border-radius: 8px; box-shadow: 0 1px 4px rgba(16, 24, 40, .10); }}
-    .badge {{ display: inline-block; padding: 4px 9px; border-radius: 999px; background: #13a66b; color: white; font-size: 12px; font-weight: 800; letter-spacing: .04em; }}
-    .title {{ margin-top: 10px; font-size: 18px; font-weight: 750; }}
-    .locator {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }}
-    .meta {{ display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }}
-    .pill {{ background: white; border: 1px solid #d9e2ec; border-radius: 999px; padding: 6px 10px; font-size: 13px; }}
-    .pill.ok {{ border-color: #9bdfc2; background: #f0fff8; }}
-    .pill.muted {{ color: #5f6f82; }}
-    .grid {{ display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }}
-    .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 14px; }}
-    .label {{ color: #5f6f82; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }}
-    table {{ width: 100%; border-collapse: collapse; background: white; margin-top: 14px; border-radius: 8px; overflow: hidden; }}
-    th, td {{ text-align: left; border-bottom: 1px solid #e6ebf1; padding: 9px; vertical-align: top; font-size: 13px; }}
-    th {{ background: #eef3f8; color: #344254; }}
-    tr.selected td {{ background: #e9fbf3; font-weight: 650; }}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <section class="heal-bar">
-      <span class="badge">HEALED ELEMENT</span>
-      <div class="title"><span class="locator">{self._html_escape(old_locator)}</span> &rarr; <span class="locator">{self._html_escape(selected_norm)}</span></div>
-      <div class="meta">
-        <span class="pill ok">Selected score: {self._html_escape(score)}</span>
-        <span class="pill">Candidates: {self._html_escape(total_count)}</span>
-        <span class="pill">AI: {self._html_escape(ai_count)}</span>
-        <span class="pill">History: {self._html_escape(history_count)}</span>
-        <span class="pill {rewrite_class}">Rewrite: {self._html_escape(rewrite_text)}</span>
-        <span class="pill muted">Generated: {self._html_escape(generated_at)}</span>
-      </div>
-    </section>
-
-    <div class="grid">
-      <div class="card">
-        <div class="label">Original locator</div>
-        <div class="locator">{self._html_escape(old_locator)}</div>
-      </div>
-      <div class="card">
-        <div class="label">Final suggested locator</div>
-        <div class="locator">{self._html_escape(new_locator)}</div>
-      </div>
-      <div class="card">
-        <div class="label">Library enhancements active in this heal</div>
-        <ul>
-          <li>Current DOM locator library plus compact current-page HTML are included in the AI prompt.</li>
-          <li>Previous healing history is used as evidence and scored against the current DOM.</li>
-          <li>AI and history candidates are ranked together with deterministic scoring.</li>
-          <li>The selected locator is persisted with score report, audit trail, and optional source rewrite.</li>
-          <li>Allure receives this healed-element bar without adding an extra test case.</li>
-        </ul>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr><th>Rank</th><th>Score</th><th>OK</th><th>Matches</th><th>Source</th><th>Locator</th><th>Scoring reasons</th></tr>
-      </thead>
-      <tbody>
-        {''.join(rows)}
-      </tbody>
-    </table>
-  </div>
-</body>
-</html>"""
-
-    def _write_healing_report_files(
-        self,
-        old_locator: str,
-        html_body: str,
-        score_report: Dict[str, Any],
-    ) -> Dict[str, str]:
-        out_dir = self._healing_report_dir()
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        base = f"{ts}__healed__{self._sanitize_name(old_locator)}"
-        html_path = os.path.join(out_dir, base + ".html")
-        json_path = os.path.join(out_dir, base + ".json")
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(html_body)
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(score_report, f, indent=2, ensure_ascii=False)
-        print(f"[Healing] Healing report HTML → {html_path}")
-        print(f"[Healing] Healing score JSON → {json_path}")
-        return {"html": html_path, "json": json_path}
-
-    def _attach_healing_report_to_allure(
-        self,
-        old_locator: str,
-        html_body: str,
-        score_report: Dict[str, Any],
-    ):
-        if not self.allure_report:
-            return
-        try:
-            from allure_commons._allure import attach  # type: ignore
-            from allure_commons.types import AttachmentType  # type: ignore
-        except Exception as exc:
-            print(f"[Healing] Allure attachment skipped: allure_commons not available ({exc})")
-            return
-
-        name = f"Self-Healing Locator Bar - {self._sanitize_name(old_locator)[:70]}"
-        try:
-            attach(html_body, name=name, attachment_type=AttachmentType.HTML)
-            json_type = getattr(AttachmentType, "JSON", None)
-            attach(
-                json.dumps(score_report, indent=2, ensure_ascii=False),
-                name=f"Self-Healing Score JSON - {self._sanitize_name(old_locator)[:70]}",
-                attachment_type=json_type or "application/json",
-            )
-            print("[Healing] Allure healing report attached.")
-        except Exception as exc:
-            print(f"[Healing] Allure attachment failed: {exc}")
-
-    def _attach_healing_summary_files_to_allure(self, paths: Dict[str, str]):
-        if not self.allure_report or not paths:
-            return
-        try:
-            from allure_commons._allure import attach  # type: ignore
-            from allure_commons.types import AttachmentType  # type: ignore
-        except Exception as exc:
-            print(f"[Healing] Allure summary attachments skipped: allure_commons not available ({exc})")
-            return
-
-        try:
-            html_path = paths.get("html")
-            csv_path = paths.get("csv")
-            json_path = paths.get("json")
-            if html_path and os.path.exists(html_path):
-                with open(html_path, "r", encoding="utf-8") as f:
-                    attach(f.read(), name="Healing Run Dashboard", attachment_type=AttachmentType.HTML)
-            if csv_path and os.path.exists(csv_path):
-                with open(csv_path, "r", encoding="utf-8") as f:
-                    csv_type = getattr(AttachmentType, "CSV", None)
-                    attach(f.read(), name="Healing Data CSV", attachment_type=csv_type or "text/csv")
-            if json_path and os.path.exists(json_path):
-                with open(json_path, "r", encoding="utf-8") as f:
-                    json_type = getattr(AttachmentType, "JSON", None)
-                    attach(f.read(), name="Healing Run Summary JSON", attachment_type=json_type or "application/json")
-            print("[Healing] Allure healing dashboard/CSV attached.")
-        except Exception as exc:
-            print(f"[Healing] Allure summary attachment failed: {exc}")
-
-    def _get_robot_context_value(self, variable_name: str, default: str = "") -> str:
-        try:
-            value = BuiltIn().get_variable_value(variable_name)
-            return str(value) if value else default
-        except Exception:
-            return default
-
-    def _allure_results_dir(self) -> str:
-        configured = (
-            os.getenv("HEALING_ALLURE_RESULTS_DIR")
-            or os.getenv("ALLURE_RESULTS_DIR")
-            or os.getenv("ALLURE_OUTPUT_PATH")
-        )
-        if configured:
-            out_dir = configured
-        else:
-            out_dir = os.path.join(self._get_output_dir(), "allure")
-        os.makedirs(out_dir, exist_ok=True)
-        return out_dir
-
-    def _allure_enhancement_description_html(self) -> str:
-        return (
-            "<div>"
-            "<h3>HealingSelenium library enhancements</h3>"
-            "<ul>"
-            "<li>LLM prompt uses the current DOM locator library and compact current-page HTML.</li>"
-            "<li>Previous healing history is supplied to the LLM as evidence, not reused blindly.</li>"
-            "<li>AI and history candidates are scored together against the live DOM.</li>"
-            "<li>The selected healed locator is persisted with a score report and audit trail.</li>"
-            "<li>The healed element bar and score table are attached to the Allure test.</li>"
-            "<li>Healing totals, dashboard, and CSV are attached without adding fake test cases.</li>"
-            "</ul>"
-            "</div>"
-        )
-
-    def _annotate_current_allure_test(
-        self,
-        old_locator: str,
-        new_locator: str,
-        score_report: Dict[str, Any],
-    ):
-        if not self.allure_report:
-            return
-        try:
-            from allure_commons._allure import dynamic  # type: ignore
-        except Exception as exc:
-            print(f"[Healing] Allure dynamic labels skipped: allure_commons not available ({exc})")
-            return
-
-        selected = score_report.get("selected") or {}
-        try:
-            dynamic.tag("self-healed")
-            dynamic.tag("healing-upgraded")
-            dynamic.label("healing", "true")
-            dynamic.label("healing.library", "HealingSelenium")
-            dynamic.label("healing.event.count", str(self.healing_event_count))
-            dynamic.parameter("healing_event_count", str(self.healing_event_count))
-            dynamic.parameter("healed_from", old_locator)
-            dynamic.parameter("healed_to", new_locator)
-            dynamic.parameter("healing_score", str(selected.get("score", "")))
-            print("[Healing] Allure current test labeled as self-healed.")
-        except Exception as exc:
-            print(f"[Healing] Allure dynamic labeling failed: {exc}")
-
-    def _write_healing_environment_summary(self):
-        # Allure renders environment values as links in some themes/builds. Do
-        # not publish HealingSelenium data there; keep it in real attachments.
-        try:
-            env_path = os.path.join(self._allure_results_dir(), "environment.properties")
-            if not os.path.exists(env_path):
-                return
-            existing: Dict[str, str] = {}
-            with open(env_path, "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if "=" in line and not line.lstrip().startswith("#"):
-                        k, v = line.rstrip("\n").split("=", 1)
-                        if not k.startswith("HealingSelenium."):
-                            existing[k] = v
-            with open(env_path, "w", encoding="utf-8") as f:
-                for key in sorted(existing):
-                    f.write(f"{key}={existing[key]}\n")
-        except Exception as exc:
-            print(f"[Healing] Allure environment cleanup failed: {exc}")
-
-    def _record_healing_event_summary(
-        self,
-        old_locator: str,
-        new_locator: str,
-        score_report: Dict[str, Any],
-        rewrite_stats: Optional[Dict[str, Any]],
-    ):
-        selected = score_report.get("selected") or {}
-        self.healing_events.append(
-            {
-                "event": self.healing_event_count,
-                "ts": self._iso_now(),
-                "test": self._get_robot_context_value("${TEST NAME}", "Unknown Robot test"),
-                "suite": self._get_robot_context_value("${SUITE NAME}", "Unknown Robot suite"),
-                "old_locator": old_locator,
-                "new_locator": new_locator,
-                "score": selected.get("score"),
-                "candidate_count": score_report.get("candidate_count", 0),
-                "ai_candidate_count": score_report.get("ai_candidate_count", 0),
-                "history_candidate_count": score_report.get("history_candidate_count", 0),
-                "rewrite_files_changed": (rewrite_stats or {}).get("files_changed", 0),
-                "rewrite_occurrences": (rewrite_stats or {}).get("occurrences_replaced", 0),
-            }
-        )
-
-    def _write_healing_csv(self, csv_path: str):
-        fieldnames = [
-            "event",
-            "ts",
-            "suite",
-            "test",
-            "old_locator",
-            "new_locator",
-            "score",
-            "candidate_count",
-            "ai_candidate_count",
-            "history_candidate_count",
-            "rewrite_files_changed",
-            "rewrite_occurrences",
-        ]
-        with open(csv_path, "w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            for event in self.healing_events:
-                writer.writerow({key: event.get(key, "") for key in fieldnames})
-
-    def _pct(self, value: int, total: int) -> float:
-        if total <= 0:
-            return 0.0
-        return round((value / total) * 100, 2)
-
-    def _write_healing_run_summary(self) -> Dict[str, str]:
-        """Write an aggregate run summary without creating Allure test results."""
-        if not self.allure_summary:
-            return {}
-        try:
-            out_dir = self._healing_report_dir()
-            json_path = os.path.join(out_dir, "healing_run_summary.json")
-            html_path = os.path.join(out_dir, "healing_run_summary.html")
-            csv_path = os.path.join(out_dir, "healing_data.csv")
-            executed = int(self.test_stats.get("executed", 0))
-            passed = int(self.test_stats.get("passed", 0))
-            failed = int(self.test_stats.get("failed", 0))
-            skipped = int(self.test_stats.get("skipped", 0))
-            healed = int(self.healing_event_count)
-            chart_total = max(1, passed + failed + skipped + healed)
-            pass_pct = self._pct(passed, chart_total)
-            fail_pct = self._pct(failed, chart_total)
-            skip_pct = self._pct(skipped, chart_total)
-            healed_pct = self._pct(healed, chart_total)
-            pass_end = pass_pct
-            fail_end = pass_end + fail_pct
-            skip_end = fail_end + skip_pct
-            healed_end = min(100.0, skip_end + healed_pct)
-            summary = {
-                "test_stats": dict(self.test_stats),
-                "total_healings": self.healing_event_count,
-                "library_enhancements": [
-                    "DOM locator library + compact current-page HTML in LLM prompt",
-                    "History-aware re-healing",
-                    "AI and history candidates scored together",
-                    "Selected locator persisted with score report and audit trail",
-                    "Allure healed-element bar attached to real tests only",
-                    "No synthetic Allure test cases emitted",
-                ],
-                "events": self.healing_events,
-            }
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(summary, f, indent=2, ensure_ascii=False)
-            self._write_healing_csv(csv_path)
-
-            rows = []
-            for event in self.healing_events:
-                rows.append(
-                    "<tr>"
-                    f"<td>{self._html_escape(event.get('event'))}</td>"
-                    f"<td>{self._html_escape(event.get('test'))}</td>"
-                    f"<td class=\"locator\">{self._html_escape(event.get('old_locator'))}</td>"
-                    f"<td class=\"locator\">{self._html_escape(event.get('new_locator'))}</td>"
-                    f"<td>{self._html_escape(event.get('score'))}</td>"
-                    f"<td>{self._html_escape(event.get('candidate_count'))}</td>"
-                    f"<td>{self._html_escape(event.get('rewrite_files_changed'))}</td>"
-                    "</tr>"
-                )
-            html = f"""<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 20px; color: #18202a; background: #f6f8fb; }}
-    .bar {{ border-left: 8px solid #13a66b; background: #e9fbf3; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(16,24,40,.1); }}
-    .layout {{ display: grid; grid-template-columns: minmax(260px, 420px) 1fr; gap: 18px; margin-top: 18px; }}
-    .cards {{ display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; }}
-    .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 12px; }}
-    .label {{ color: #5f6f82; font-size: 12px; text-transform: uppercase; font-weight: 800; }}
-    .count {{ font-size: 32px; font-weight: 800; }}
-    .note {{ color: #5f6f82; font-size: 13px; }}
-    .pie {{ width: 260px; height: 260px; border-radius: 50%; background:
-      conic-gradient(#28a745 0 {pass_end}%, #dc3545 {pass_end}% {fail_end}%,
-      #f5a623 {fail_end}% {skip_end}%, #168f65 {skip_end}% {healed_end}%, #d9e2ec {healed_end}% 100%);
-      border: 10px solid white; box-shadow: 0 1px 4px rgba(16,24,40,.14); }}
-    .legend {{ display: grid; gap: 8px; margin-top: 12px; }}
-    .swatch {{ display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }}
-    .bars {{ display: grid; gap: 10px; }}
-    .barrow {{ display: grid; grid-template-columns: 88px 1fr 48px; align-items: center; gap: 8px; }}
-    .track {{ height: 16px; background: #e6ebf1; border-radius: 999px; overflow: hidden; }}
-    .fill {{ height: 100%; border-radius: 999px; }}
-    .locator {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 18px; background: white; }}
-    th, td {{ border-bottom: 1px solid #e6ebf1; padding: 9px; text-align: left; vertical-align: top; }}
-    th {{ background: #eef3f8; }}
-    @media (max-width: 820px) {{ .layout {{ grid-template-columns: 1fr; }} .cards {{ grid-template-columns: repeat(2, 1fr); }} }}
-  </style>
-</head>
-<body>
-  <section class="bar">
-    <div class="label">Self-healing execution overview</div>
-    <p>Real test totals are preserved. Healing is shown as a separate automation metric, not an extra executed test case.</p>
-    <p class="note">CSV: healing_reports/healing_data.csv</p>
-  </section>
-  <section class="cards">
-    <div class="card"><div class="label">Executed</div><div class="count">{self._html_escape(executed)}</div></div>
-    <div class="card"><div class="label">Passed</div><div class="count">{self._html_escape(passed)}</div></div>
-    <div class="card"><div class="label">Failed</div><div class="count">{self._html_escape(failed)}</div></div>
-    <div class="card"><div class="label">Skipped</div><div class="count">{self._html_escape(skipped)}</div></div>
-    <div class="card"><div class="label">Healed</div><div class="count">{self._html_escape(healed)}</div></div>
-  </section>
-  <section class="layout">
-    <div class="card">
-      <div class="label">Status + healing pie</div>
-      <div class="pie"></div>
-      <div class="legend">
-        <div><span class="swatch" style="background:#28a745"></span>Passed: {self._html_escape(passed)}</div>
-        <div><span class="swatch" style="background:#dc3545"></span>Failed: {self._html_escape(failed)}</div>
-        <div><span class="swatch" style="background:#f5a623"></span>Skipped: {self._html_escape(skipped)}</div>
-        <div><span class="swatch" style="background:#168f65"></span>Healed locators: {self._html_escape(healed)}</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="label">Bar chart</div>
-      <div class="bars">
-        <div class="barrow"><span>Executed</span><div class="track"><div class="fill" style="width:{self._pct(executed, max(executed, healed, 1))}%;background:#607d8b"></div></div><span>{self._html_escape(executed)}</span></div>
-        <div class="barrow"><span>Passed</span><div class="track"><div class="fill" style="width:{self._pct(passed, max(executed, healed, 1))}%;background:#28a745"></div></div><span>{self._html_escape(passed)}</span></div>
-        <div class="barrow"><span>Failed</span><div class="track"><div class="fill" style="width:{self._pct(failed, max(executed, healed, 1))}%;background:#dc3545"></div></div><span>{self._html_escape(failed)}</span></div>
-        <div class="barrow"><span>Skipped</span><div class="track"><div class="fill" style="width:{self._pct(skipped, max(executed, healed, 1))}%;background:#f5a623"></div></div><span>{self._html_escape(skipped)}</span></div>
-        <div class="barrow"><span>Healed</span><div class="track"><div class="fill" style="width:{self._pct(healed, max(executed, healed, 1))}%;background:#168f65"></div></div><span>{self._html_escape(healed)}</span></div>
-      </div>
-      <p class="note">Healed counts represent locator repairs during real tests. They are intentionally not included in executed test count.</p>
-    </div>
-  </section>
-  <table>
-    <thead><tr><th>#</th><th>Test</th><th>Original locator</th><th>Healed locator</th><th>Score</th><th>Candidates</th><th>Files rewritten</th></tr></thead>
-    <tbody>{''.join(rows)}</tbody>
-  </table>
-</body>
-</html>"""
-            with open(html_path, "w", encoding="utf-8") as f:
-                f.write(html)
-            print(f"[Healing] Healing run summary HTML → {html_path}")
-            print(f"[Healing] Healing run summary JSON → {json_path}")
-            print(f"[Healing] Healing data CSV → {csv_path}")
-            return {"html": html_path, "json": json_path, "csv": csv_path}
-        except Exception as exc:
-            print(f"[Healing] Healing run summary generation failed: {exc}")
-            return {}
-
-    def _publish_healing_report(
-        self,
-        old_locator: str,
-        new_locator: str,
-        score_report: Dict[str, Any],
-        rewrite_stats: Optional[Dict[str, Any]],
-    ):
-        try:
-            self.healing_event_count += 1
-            score_report["healing_event_count"] = self.healing_event_count
-            html_body = self._build_healing_report_html(old_locator, new_locator, score_report, rewrite_stats)
-            paths = self._write_healing_report_files(old_locator, html_body, score_report)
-            score_report["healing_report_paths"] = paths
-            self._record_healing_event_summary(old_locator, new_locator, score_report, rewrite_stats)
-            self._annotate_current_allure_test(old_locator, new_locator, score_report)
-            self._attach_healing_report_to_allure(old_locator, html_body, score_report)
-            summary_paths = self._write_healing_run_summary()
-            self._attach_healing_summary_files_to_allure(summary_paths)
-            self._write_healing_environment_summary()
-        except Exception as exc:
-            print(f"[Healing] Healing report generation failed: {exc}")
 
     # ---------------------------------- Healing & Ollama ----------------------------------
     def _extract_first_json_object(self, s: str) -> Optional[dict]:
@@ -1546,12 +994,7 @@ class HealingSelenium:
                                 pass
         return None
 
-    def _ask_ollama_for_new_locator(
-        self,
-        old_locator: str,
-        html: str,
-        previous_heal_context: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+    def _ask_ollama_for_new_locator(self, old_locator: str, html: str) -> Optional[Dict[str, Any]]:
         print(f"\n[Healing] Asking Ollama to heal locator: {old_locator}")
 
         # Collect DOM locator library, hints, and compact current-page HTML.
@@ -1560,14 +1003,6 @@ class HealingSelenium:
         lib_json = json.dumps(dom_lib, ensure_ascii=False)
         html_limit = int(os.getenv("HEALING_PROMPT_HTML_MAX_CHARS", "8000"))
         html_excerpt = self._compact_html_for_prompt(html, max_chars=html_limit)
-        history_json = json.dumps(previous_heal_context or {}, ensure_ascii=False)[:3500]
-        history_prompt = (
-            "- Previous healing history for this locator. Use it as evidence, but do not blindly reuse it; "
-            "compare it against the current DOM and HTML:\n"
-            f"{history_json}\n"
-            if previous_heal_context
-            else ""
-        )
 
         prompt = (
             "You are a locator healing function. Search the provided current DOM inventory and current page HTML, "
@@ -1584,7 +1019,6 @@ class HealingSelenium:
             f"{lib_json[:4000]}\n"
             "- Compact current page HTML snapshot:\n"
             f"{html_excerpt}\n"
-            f"{history_prompt}"
             "- If you choose id/name, the value MUST be one listed above. For data-test*, use css selectors like [data-test=\"...\"] if present.\n"
             f"- Helpful keywords (from the broken locator): {hints}\n"
             "- Each candidate must be grounded in values visible in the DOM library or HTML snapshot."
@@ -1637,7 +1071,6 @@ class HealingSelenium:
                 "dom_library": dom_lib,
                 "hints": hints,
                 "html_chars_used": len(html_excerpt),
-                "previous_heal_context": previous_heal_context,
             }
         except Exception as e:
             preview = (content or "")[:200].replace("\n", " ")
@@ -1778,8 +1211,12 @@ class HealingSelenium:
             if not self.auto_heal:
                 raise
 
-        previous_heal_context = self._get_healing_history_context(locator)
-        heal_result = self._heal_locator(locator, previous_heal_context=previous_heal_context)
+        # Try known healed first (and revalidate)
+        healed = self._get_current_healed(locator)
+        if healed and not self._is_locator_currently_valid(healed):
+            healed = None
+
+        heal_result = self._heal_locator(locator) if not healed else self._build_cached_heal_result(locator, healed)
         if heal_result and heal_result.get("entry"):
             new_loc = heal_result["entry"]["locator"]
             print(f"[Healing] Retrying with healed locator: {new_loc}")
@@ -1817,8 +1254,12 @@ class HealingSelenium:
             if not self.auto_heal:
                 raise
 
-        previous_heal_context = self._get_healing_history_context(locator)
-        heal_result = self._heal_locator(locator, previous_heal_context=previous_heal_context)
+        # Try known healed first (and revalidate)
+        healed = self._get_current_healed(locator)
+        if healed and not self._is_locator_currently_valid(healed):
+            healed = None
+
+        heal_result = self._heal_locator(locator) if not healed else self._build_cached_heal_result(locator, healed)
         if heal_result and heal_result.get("entry"):
             new_loc = heal_result["entry"]["locator"]
             print(f"[Healing] Retrying with healed locator: {new_loc}")
@@ -1995,144 +1436,22 @@ class HealingSelenium:
             return entry  # legacy flat format
         return None
 
-    def _entry_locator(self, entry: Any) -> Optional[str]:
-        if isinstance(entry, dict):
-            loc = entry.get("locator")
-            return str(loc) if loc else None
-        if isinstance(entry, str):
-            return entry
-        return None
-
-    def _normalize_heal_entry(self, entry: Any, source: str) -> Optional[Dict[str, Any]]:
-        loc = self._entry_locator(entry)
-        if not loc:
-            return None
-        typ = entry.get("type") if isinstance(entry, dict) else None
+    def _build_cached_heal_result(self, old_locator: str, healed: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Reuse a previously healed locator and still apply runtime policies like
+        auto-rewrite. Previously cached heals skipped rewrite entirely, which made
+        auto_rewrite=True look like it was ignored.
+        """
+        new_locator = healed.get("locator")
+        print(f"[Healing] Using cached healed locator: {new_locator}")
+        rewrite_stats: Optional[Dict[str, Any]] = None
+        if self.auto_rewrite and new_locator:
+            rewrite_stats = self._maybe_autorewrite(old_locator, new_locator)
         return {
-            "type": typ or self._infer_locator_type(loc),
-            "locator": loc,
-            "updated_at": entry.get("updated_at") if isinstance(entry, dict) else None,
-            "source": source,
-            "score": entry.get("score") if isinstance(entry, dict) else None,
+            "entry": healed,
+            "rewrite_stats": rewrite_stats,
+            "score_report": healed.get("score_report") if isinstance(healed, dict) else None,
         }
-
-    def _get_healing_history_context(self, locator: str) -> Optional[Dict[str, Any]]:
-        """
-        Build compact previous-heal context from healed_locators.json and the
-        append-only history JSONL. This matches either the original broken locator
-        key or a locator that was previously produced as a healed value.
-        """
-        snapshot_matches: List[Dict[str, Any]] = []
-        matched_keys = set()
-        locator_values = {locator}
-
-        for old, data in self.healed_locators.items():
-            current = data.get("current") if isinstance(data, dict) else None
-            if current is None and isinstance(data, dict) and "locator" in data:
-                current = data
-            history = data.get("history", []) if isinstance(data, dict) else []
-            values = {old}
-            cur_loc = self._entry_locator(current)
-            if cur_loc:
-                values.add(cur_loc)
-            for item in history:
-                hist_loc = self._entry_locator(item)
-                if hist_loc:
-                    values.add(hist_loc)
-
-            if locator in values:
-                matched_keys.add(old)
-                locator_values.update(values)
-                snapshot_matches.append(
-                    {
-                        "old_locator": old,
-                        "current": self._normalize_heal_entry(current, "snapshot-current"),
-                        "history": [
-                            h for h in (
-                                self._normalize_heal_entry(item, "snapshot-history")
-                                for item in history[-8:]
-                            )
-                            if h
-                        ],
-                    }
-                )
-
-        audit_events: List[Dict[str, Any]] = []
-        if os.path.exists(self.audit_file):
-            try:
-                with open(self.audit_file, "r", encoding="utf-8") as f:
-                    for line in f:
-                        try:
-                            event = json.loads(line)
-                        except Exception:
-                            continue
-                        old = event.get("old_locator")
-                        new = event.get("new") if isinstance(event.get("new"), dict) else {}
-                        new_loc = new.get("locator")
-                        if old in matched_keys or old == locator or new_loc in locator_values:
-                            audit_events.append(
-                                {
-                                    "ts": event.get("ts"),
-                                    "event": event.get("event"),
-                                    "old_locator": old,
-                                    "new": self._normalize_heal_entry(new, "audit-new") if new else None,
-                                }
-                            )
-            except Exception:
-                audit_events = []
-
-        if not snapshot_matches and not audit_events:
-            return None
-
-        context = {
-            "requested_locator": locator,
-            "snapshot_matches": snapshot_matches[-5:],
-            "audit_events": audit_events[-12:],
-        }
-        print(
-            f"[Healing] Previous healing context found: "
-            f"{len(context['snapshot_matches'])} snapshot match(es), {len(context['audit_events'])} audit event(s)."
-        )
-        return context
-
-    def _previous_heal_candidates(self, previous_heal_context: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Turn previous healed locators into normal candidates for the scorer."""
-        if not previous_heal_context:
-            return []
-
-        raw_entries: List[Dict[str, Any]] = []
-        for match in previous_heal_context.get("snapshot_matches", []):
-            current = match.get("current")
-            if current:
-                raw_entries.append(current)
-            raw_entries.extend(match.get("history", []))
-        for event in previous_heal_context.get("audit_events", []):
-            new = event.get("new")
-            if new:
-                raw_entries.append(new)
-
-        candidates: List[Dict[str, Any]] = []
-        seen = set()
-        for entry in raw_entries:
-            loc = entry.get("locator")
-            if not loc:
-                continue
-            key = (entry.get("type"), loc)
-            if key in seen:
-                continue
-            seen.add(key)
-            candidates.append(
-                {
-                    "type": entry.get("type") or self._infer_locator_type(loc),
-                    "locator": loc,
-                    "reason": f"previously healed locator from {entry.get('source')}",
-                    "confidence": 0.85,
-                    "source": entry.get("source") or "history",
-                }
-            )
-            if len(candidates) >= 6:
-                break
-        return candidates
 
     def _record_healing(
         self,
@@ -2175,11 +1494,7 @@ class HealingSelenium:
             rewrite_stats = self._maybe_autorewrite(old_locator, new_entry["locator"])
         return rewrite_stats
 
-    def _heal_locator(
-        self,
-        locator: str,
-        previous_heal_context: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:  # noqa: PLR0912
+    def _heal_locator(self, locator: str) -> Optional[Dict[str, Any]]:  # noqa: PLR0912
         """
         Attempt to heal given locator using current page HTML via Ollama.
         On success, persists with timestamp/history and returns a dict:
@@ -2190,36 +1505,14 @@ class HealingSelenium:
             print("[Healing] ❌ No Selenium driver found.")
             return None
 
-        ai_result = self._ask_ollama_for_new_locator(
-            locator,
-            driver.page_source,
-            previous_heal_context=previous_heal_context,
-        )
-        ai_candidates = ai_result.get("candidates", []) if ai_result else []
-        history_candidates = self._previous_heal_candidates(previous_heal_context)
-
-        candidates: List[Dict[str, Any]] = []
-        seen = set()
-        for candidate in ai_candidates + history_candidates:
-            key = (candidate.get("type"), candidate.get("locator"))
-            if key in seen:
-                continue
-            seen.add(key)
-            candidates.append(candidate)
-
-        if candidates:
-            dom_lib = ai_result.get("dom_library", {}) if ai_result else self._collect_dom_locator_library()
-            html_chars_used = int(ai_result.get("html_chars_used", 0)) if ai_result else 0
+        ai_result = self._ask_ollama_for_new_locator(locator, driver.page_source)
+        if ai_result and ai_result.get("candidates"):
             score_report = self._score_locator_candidates(
                 locator,
-                candidates,
-                dom_lib,
-                html_chars_used,
+                ai_result.get("candidates", []),
+                ai_result.get("dom_library", {}),
+                int(ai_result.get("html_chars_used", 0)),
             )
-            score_report["ai_candidate_count"] = len(ai_candidates)
-            score_report["history_candidate_count"] = len(history_candidates)
-            if previous_heal_context:
-                score_report["previous_heal_context"] = previous_heal_context
             self._print_locator_score_report(score_report)
 
             selected = score_report.get("selected")
@@ -2235,12 +1528,6 @@ class HealingSelenium:
                 "score": selected.get("score"),
             }
             rewrite_stats = self._record_healing(locator, suggestion, score_report=score_report)
-            self._publish_healing_report(
-                locator,
-                suggestion["locator"],
-                score_report,
-                rewrite_stats,
-            )
             return {
                 "entry": self._get_current_healed(locator),
                 "rewrite_stats": rewrite_stats,
@@ -2267,9 +1554,7 @@ class HealingSelenium:
             reason_parts.append(
                 "Scoring selected locator "
                 f"'{selected.get('normalized_locator')}' with score {selected.get('score')} "
-                f"from {score_report.get('candidate_count')} candidate(s) "
-                f"({score_report.get('ai_candidate_count', 0)} AI, "
-                f"{score_report.get('history_candidate_count', 0)} history)."
+                f"from {score_report.get('candidate_count')} AI candidate(s)."
             )
         if rewrite_stats is not None:
             reason_parts.append(
