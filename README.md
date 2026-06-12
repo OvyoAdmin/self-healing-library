@@ -250,17 +250,6 @@ This ensures the team sees and reviews locator updates instead of silently maski
 
 ---
 
-## 🤝 Contributing
-
-- File issues/ideas, or open PRs with focused changes. Please include unit/integration examples if possible.
-
----
-
-## 📜 License
-
-Add your project’s license here (e.g., MIT, Apache‑2.0, or Internal/Proprietary).
-
----
 
 ## 🧭 Appendix: Available library arguments
 
