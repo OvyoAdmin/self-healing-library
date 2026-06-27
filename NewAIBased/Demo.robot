@@ -48,7 +48,7 @@ Verify login with valid credentials
     [Tags]    HappyCase    TC_1
     [Documentation]    Verify login with valid credentials
     Input Text    id=username    tomsmith
-    Input Text    xpath=//input[@id="password"]    SuperSecretPassword!
+    Input Text    id=password    SuperSecretPassword!
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash success"]    10
     Element Should Be Visible    xpath=//div[@class="flash success"]
@@ -57,7 +57,7 @@ Verify login with valid credentials
 Verify login with invalid username
     [Documentation]    Verify login with invalid username
     [Tags]    TC_2
-    Input Text    xpath=//input[@id="username"]    user@name.com
+    Input Text    id=username    user@name.com
     Input Text    id=password    SuperSecretPassword!
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10
@@ -75,7 +75,7 @@ Verify login with invalid password
 Verify login with both invalid username and password
     [Documentation]    Verify login with both invalid username and password
     [Tags]    TC_4
-    Input Text    xpath=//input[@id="username"]    user@name.com
+    Input Text    id=username    user@name.com
     Input Text    id=password    Password
     Click Element   xpath=//button[@type="submit"]
     Wait Until Element Is Visible    xpath=//div[@class="flash error"]    10

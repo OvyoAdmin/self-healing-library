@@ -47,6 +47,7 @@ HEALING_VALIDATE_RETRY_INTERVAL_MS default: 150
 
 # Failure artifacts
 HEALING_CAPTURE_ON_FAIL      default: true
+HEALING_CAPTURE_HEALED_SCREENSHOT default: true
 HEALING_SAVE_HTML_ON_FAIL    default: false
 HEALING_ARTIFACT_DIR         default: healing_screens (under ${OUTPUT DIR})
 HEALING_ALLURE_REPORT        default: true
@@ -83,6 +84,7 @@ Heals-Rewrites-Then-Fails
     Print Locator Library
 """
 from __future__ import annotations
+import base64
 import csv
 import fnmatch
 import glob
@@ -146,6 +148,7 @@ class HealingSelenium:
 
         # Failure artifact toggle
         self.capture_on_fail = self._arg_or_env_bool(None, "HEALING_CAPTURE_ON_FAIL", True)
+        self.capture_healed_screenshot = self._arg_or_env_bool(None, "HEALING_CAPTURE_HEALED_SCREENSHOT", True)
         self.allure_report = self._arg_or_env_bool(None, "HEALING_ALLURE_REPORT", True)
         self.allure_summary = self._arg_or_env_bool(None, "HEALING_ALLURE_SUMMARY", True)
 
@@ -173,6 +176,7 @@ class HealingSelenium:
         self.healed_locators = self._load_healed_locators()
         self.healing_event_count = 0
         self.healing_events: List[Dict[str, Any]] = []
+        self.healed_test_ids = set()
         self.test_stats = {"executed": 0, "passed": 0, "failed": 0, "skipped": 0}
         self.ROBOT_LIBRARY_LISTENER = self
 
@@ -188,6 +192,7 @@ class HealingSelenium:
             f"[HealingSelenium] Validation → visible:{self.require_visible} unique:{self.require_unique} "
             f"retries:{self.validate_retries} interval_ms:{self.validate_retry_interval_ms}\n"
             f"[HealingSelenium] Capture-On-Fail:{self.capture_on_fail} "
+            f"Capture-Healed-Screenshot:{self.capture_healed_screenshot} "
             f"Fail-On-Heal:{self.fail_on_heal} Fail-After-Rewrite:{self.fail_after_rewrite}\n"
             f"Artifacts dir:{os.getenv('HEALING_ARTIFACT_DIR', 'healing_screens')}\n"
             f"[HealingSelenium] Allure-Report:{self.allure_report} "
@@ -274,10 +279,32 @@ class HealingSelenium:
                 self.test_stats["skipped"] += 1
             else:
                 self.test_stats["failed"] += 1
+            identity = self._get_test_identity()
+            for event in self.healing_events:
+                if event.get("test_case_id") == identity["test_case_id"]:
+                    event["result_status"] = status
             self._write_healing_run_summary()
             self._write_healing_environment_summary()
         except Exception as exc:
             print(f"[Healing] Listener test summary update failed: {exc}")
+
+    def close(self):
+        """
+        Robot listener hook. Called when the whole test execution ends.
+        Ensures any pending healing events are marked as failures in the dashboard.
+        """
+        try:
+            changed = False
+            for event in self.healing_events:
+                if event.get("result_status") == "PENDING":
+                    event["result_status"] = "FAIL"
+                    changed = True
+            
+            summary_paths = self._write_healing_run_summary()
+            self._inject_allure_suite_teardown_attachments(summary_paths)
+            self._write_healing_environment_summary()
+        except Exception as exc:
+            print(f"[Healing] Listener close failed: {exc}")
 
     def get_keyword_documentation(self, name: str) -> str:
         """Return keyword documentation"""
@@ -411,6 +438,106 @@ class HealingSelenium:
         except Exception as e:
             print(f"[Healing] ⚠️ Artifact capture failed: {e}")
             return None
+
+    def _capture_healed_element_screenshot(self, old_locator: str, healed_locator: str) -> Optional[str]:
+        """
+        Highlight the selected healed element, capture a screenshot, then restore
+        the page style. This screenshot is used as healing evidence in reports.
+        """
+        if not self.capture_healed_screenshot:
+            return None
+        drv = getattr(self._sl, "driver", None)
+        if not drv or not healed_locator:
+            return None
+
+        out_dir = os.path.join(
+            self._get_output_dir(),
+            os.getenv("HEALING_ARTIFACT_DIR", "healing_screens"),
+        )
+        os.makedirs(out_dir, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        png_path = os.path.join(
+            out_dir,
+            f"{ts}__healed_element__{self._sanitize_name(old_locator)}.png",
+        )
+
+        element = None
+        try:
+            elems = self._sl.get_webelements(healed_locator)
+            visible = [e for e in elems if getattr(e, "is_displayed", lambda: True)()]
+            element = visible[0] if visible else (elems[0] if elems else None)
+            if element is None:
+                print(f"[Healing] ⚠️ Could not find healed element for screenshot: {healed_locator}")
+                return None
+
+            drv.execute_script(
+                r"""
+                const el = arguments[0];
+                const oldStyle = el.getAttribute('style') || '';
+                el.setAttribute('data-healing-old-style', oldStyle);
+                el.scrollIntoView({block: 'center', inline: 'center'});
+                el.style.setProperty('outline', '5px solid #ff2d55', 'important');
+                el.style.setProperty('outline-offset', '3px', 'important');
+                el.style.setProperty('box-shadow', '0 0 0 8px rgba(255,45,85,.35), 0 0 28px rgba(255,45,85,.95)', 'important');
+                el.style.setProperty('background-color', 'rgba(255,245,0,.22)', 'important');
+                el.style.setProperty('transition', 'none', 'important');
+
+                const oldBadge = document.getElementById('__healing_element_badge');
+                if (oldBadge) oldBadge.remove();
+                const rect = el.getBoundingClientRect();
+                const badge = document.createElement('div');
+                badge.id = '__healing_element_badge';
+                badge.textContent = 'HEALED LOCATOR';
+                badge.style.cssText = [
+                    'position:fixed',
+                    'z-index:2147483647',
+                    'left:' + Math.max(8, rect.left) + 'px',
+                    'top:' + Math.max(8, rect.top - 34) + 'px',
+                    'background:#ff2d55',
+                    'color:white',
+                    'font:700 13px -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif',
+                    'letter-spacing:.04em',
+                    'padding:6px 10px',
+                    'border-radius:6px',
+                    'box-shadow:0 4px 14px rgba(0,0,0,.28)',
+                    'pointer-events:none'
+                ].join(';');
+                document.documentElement.appendChild(badge);
+                """,
+                element,
+            )
+            time.sleep(0.2)
+
+            try:
+                self._sl.capture_page_screenshot(png_path)
+            except Exception:
+                if not drv.get_screenshot_as_file(png_path):
+                    return None
+            print(f"[Healing] Healed element screenshot → {png_path}")
+            return png_path
+        except Exception as exc:
+            print(f"[Healing] ⚠️ Healed element screenshot failed: {exc}")
+            return None
+        finally:
+            if element is not None:
+                try:
+                    drv.execute_script(
+                        r"""
+                        const el = arguments[0];
+                        const oldStyle = el.getAttribute('data-healing-old-style');
+                        if (oldStyle === null || oldStyle === '') {
+                            el.removeAttribute('style');
+                        } else {
+                            el.setAttribute('style', oldStyle);
+                        }
+                        el.removeAttribute('data-healing-old-style');
+                        const badge = document.getElementById('__healing_element_badge');
+                        if (badge) badge.remove();
+                        """,
+                        element,
+                    )
+                except Exception:
+                    pass
 
     def _sanitize_name(self, s: Optional[str]) -> str:
         if not s:
@@ -1012,6 +1139,22 @@ class HealingSelenium:
             .replace("'", "&#x27;")
         )
 
+    def _short_log_value(self, value: Any, limit: int = 160) -> str:
+        text = "" if value is None else str(value)
+        if len(text) <= limit:
+            return text
+        return text[: max(0, limit - 3)] + "..."
+
+    def _image_data_url(self, path: Optional[str]) -> Optional[str]:
+        if not path or not os.path.exists(path):
+            return None
+        try:
+            with open(path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("ascii")
+            return f"data:image/png;base64,{encoded}"
+        except Exception:
+            return None
+
     def _healing_report_dir(self) -> str:
         out_dir = os.path.join(
             self._get_output_dir(),
@@ -1033,6 +1176,23 @@ class HealingSelenium:
         ai_count = score_report.get("ai_candidate_count", 0)
         history_count = score_report.get("history_candidate_count", 0)
         total_count = score_report.get("candidate_count", 0)
+        screenshot_path = score_report.get("healed_screenshot_path")
+        screenshot_data_url = self._image_data_url(screenshot_path)
+        screenshot_html = ""
+        if screenshot_data_url:
+            screenshot_html = (
+                "<div class=\"card shot-card\">"
+                "<div class=\"label\">Highlighted healed element screenshot</div>"
+                f"<img class=\"shot\" src=\"{screenshot_data_url}\" alt=\"Highlighted healed element screenshot\">"
+                "</div>"
+            )
+        elif screenshot_path:
+            screenshot_html = (
+                "<div class=\"card\">"
+                "<div class=\"label\">Highlighted healed element screenshot</div>"
+                f"<div class=\"locator\">{self._html_escape(screenshot_path)}</div>"
+                "</div>"
+            )
 
         rows: List[str] = []
         for item in score_report.get("candidates", []):
@@ -1083,6 +1243,8 @@ class HealingSelenium:
     .pill.muted {{ color: #5f6f82; }}
     .grid {{ display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }}
     .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 14px; }}
+    .shot-card {{ padding: 10px; }}
+    .shot {{ display: block; width: 100%; max-height: 520px; object-fit: contain; border: 1px solid #d9e2ec; border-radius: 6px; background: #f6f8fb; }}
     .label {{ color: #5f6f82; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }}
     table {{ width: 100%; border-collapse: collapse; background: white; margin-top: 14px; border-radius: 8px; overflow: hidden; }}
     th, td {{ text-align: left; border-bottom: 1px solid #e6ebf1; padding: 9px; vertical-align: top; font-size: 13px; }}
@@ -1124,6 +1286,7 @@ class HealingSelenium:
           <li>Allure receives this healed-element bar without adding an extra test case.</li>
         </ul>
       </div>
+      {screenshot_html}
     </div>
 
     <table>
@@ -1153,8 +1316,6 @@ class HealingSelenium:
             f.write(html_body)
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(score_report, f, indent=2, ensure_ascii=False)
-        print(f"[Healing] Healing report HTML → {html_path}")
-        print(f"[Healing] Healing score JSON → {json_path}")
         return {"html": html_path, "json": json_path}
 
     def _attach_healing_report_to_allure(
@@ -1175,6 +1336,15 @@ class HealingSelenium:
         name = f"Self-Healing Locator Bar - {self._sanitize_name(old_locator)[:70]}"
         try:
             attach(html_body, name=name, attachment_type=AttachmentType.HTML)
+            screenshot_path = score_report.get("healed_screenshot_path")
+            if screenshot_path and os.path.exists(screenshot_path):
+                with open(screenshot_path, "rb") as f:
+                    png_type = getattr(AttachmentType, "PNG", None)
+                    attach(
+                        f.read(),
+                        name=f"Highlighted Healed Element - {self._sanitize_name(old_locator)[:70]}",
+                        attachment_type=png_type or "image/png",
+                    )
             json_type = getattr(AttachmentType, "JSON", None)
             attach(
                 json.dumps(score_report, indent=2, ensure_ascii=False),
@@ -1214,12 +1384,111 @@ class HealingSelenium:
         except Exception as exc:
             print(f"[Healing] Allure summary attachment failed: {exc}")
 
+    def _inject_allure_suite_teardown_attachments(self, paths: Dict[str, str]):
+        """Directly modifies Allure result JSON to append dashboard to suite teardown."""
+        if not self.allure_report or not paths:
+            return
+        out_dir = self._allure_results_dir()
+        containers = glob.glob(os.path.join(out_dir, "*-container.json"))
+        if not containers:
+            return
+        
+        root_container = None
+        max_children = -1
+        for c in containers:
+            try:
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                num_children = len(data.get("children", []))
+                if num_children > max_children:
+                    max_children = num_children
+                    root_container = c
+            except Exception:
+                pass
+                
+        if not root_container:
+            return
+
+        try:
+            import uuid
+            import shutil
+            attachments = []
+            
+            def add_attachment(file_path, name, mime_type, ext):
+                if file_path and os.path.exists(file_path):
+                    att_uuid = str(uuid.uuid4())
+                    dest = os.path.join(out_dir, f"{att_uuid}-attachment.{ext}")
+                    shutil.copy(file_path, dest)
+                    attachments.append({
+                        "name": name,
+                        "source": f"{att_uuid}-attachment.{ext}",
+                        "type": mime_type
+                    })
+                    
+            add_attachment(paths.get("html"), "Healing Run Dashboard", "text/html", "html")
+            add_attachment(paths.get("csv"), "Healing Data CSV", "text/csv", "csv")
+            add_attachment(paths.get("json"), "Healing Run Summary JSON", "application/json", "json")
+            
+            if not attachments:
+                return
+                
+            with open(root_container, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+            if "afters" not in data:
+                data["afters"] = []
+                
+            data["afters"].append({
+                "name": "Healing Run Dashboard",
+                "status": "passed",
+                "stage": "finished",
+                "attachments": attachments,
+                "steps": []
+            })
+            
+            with open(root_container, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+            print("[Healing] Allure suite teardown attachments injected.")
+        except Exception as exc:
+            print(f"[Healing] Allure suite teardown injection failed: {exc}")
+
     def _get_robot_context_value(self, variable_name: str, default: str = "") -> str:
         try:
             value = BuiltIn().get_variable_value(variable_name)
             return str(value) if value else default
         except Exception:
             return default
+
+    def _get_robot_tags(self) -> List[str]:
+        try:
+            tags = BuiltIn().get_variable_value("@{TEST TAGS}")
+            if tags is None:
+                tags = BuiltIn().get_variable_value("${TEST TAGS}") or []
+            if isinstance(tags, str):
+                tags = re.split(r"[, ]+", tags.strip()) if tags.strip() else []
+            return [str(tag) for tag in tags]
+        except Exception:
+            return []
+
+    def _get_test_case_id(self) -> str:
+        tags = self._get_robot_tags()
+        for tag in tags:
+            if re.match(r"(?i)^(TC|TEST|CASE|ID)[-_]?\d+", tag) or re.match(r"(?i)^TC[_-]?\w+", tag):
+                return tag
+        test_name = self._get_robot_context_value("${TEST NAME}", "Unknown Robot test")
+        return self._sanitize_name(test_name)[:80] or "Unknown"
+
+    def _get_test_identity(self) -> Dict[str, Any]:
+        test_name = self._get_robot_context_value("${TEST NAME}", "Unknown Robot test")
+        suite_name = self._get_robot_context_value("${SUITE NAME}", "Unknown Robot suite")
+        tags = self._get_robot_tags()
+        return {
+            "test_case_id": self._get_test_case_id(),
+            "test": test_name,
+            "suite": suite_name,
+            "tags": tags,
+            "tags_csv": ",".join(tags),
+        }
 
     def _allure_results_dir(self) -> str:
         configured = (
@@ -1230,7 +1499,13 @@ class HealingSelenium:
         if configured:
             out_dir = configured
         else:
-            out_dir = os.path.join(self._get_output_dir(), "allure")
+            base_out = self._get_output_dir()
+            import glob
+            # Check if allure results are directly in the output dir
+            if glob.glob(os.path.join(base_out, "*-container.json")):
+                out_dir = base_out
+            else:
+                out_dir = os.path.join(base_out, "allure")
         os.makedirs(out_dir, exist_ok=True)
         return out_dir
 
@@ -1306,29 +1581,47 @@ class HealingSelenium:
         rewrite_stats: Optional[Dict[str, Any]],
     ):
         selected = score_report.get("selected") or {}
-        self.healing_events.append(
-            {
-                "event": self.healing_event_count,
-                "ts": self._iso_now(),
-                "test": self._get_robot_context_value("${TEST NAME}", "Unknown Robot test"),
-                "suite": self._get_robot_context_value("${SUITE NAME}", "Unknown Robot suite"),
-                "old_locator": old_locator,
-                "new_locator": new_locator,
-                "score": selected.get("score"),
-                "candidate_count": score_report.get("candidate_count", 0),
-                "ai_candidate_count": score_report.get("ai_candidate_count", 0),
-                "history_candidate_count": score_report.get("history_candidate_count", 0),
-                "rewrite_files_changed": (rewrite_stats or {}).get("files_changed", 0),
-                "rewrite_occurrences": (rewrite_stats or {}).get("occurrences_replaced", 0),
-            }
+        identity = self._get_test_identity()
+        self.healed_test_ids.add(identity["test_case_id"])
+        event = {
+            "event": self.healing_event_count,
+            "ts": self._iso_now(),
+            "test_case_id": identity["test_case_id"],
+            "test": identity["test"],
+            "suite": identity["suite"],
+            "tags": identity["tags_csv"],
+            "result_status": "PENDING",
+            "healed": "YES",
+            "old_locator": old_locator,
+            "new_locator": new_locator,
+            "score": selected.get("score"),
+            "candidate_count": score_report.get("candidate_count", 0),
+            "ai_candidate_count": score_report.get("ai_candidate_count", 0),
+            "history_candidate_count": score_report.get("history_candidate_count", 0),
+            "rewrite_files_changed": (rewrite_stats or {}).get("files_changed", 0),
+            "rewrite_occurrences": (rewrite_stats or {}).get("occurrences_replaced", 0),
+            "healed_screenshot_path": score_report.get("healed_screenshot_path", ""),
+        }
+        self.healing_events.append(event)
+        print(
+            "[Healing] Healed data → "
+            f"test_case_id={event['test_case_id']} "
+            f"status={event['result_status']} "
+            f"score={event['score']} "
+            f"old={self._short_log_value(old_locator)} "
+            f"new={self._short_log_value(new_locator)}"
         )
 
     def _write_healing_csv(self, csv_path: str):
         fieldnames = [
             "event",
             "ts",
+            "test_case_id",
             "suite",
             "test",
+            "tags",
+            "result_status",
+            "healed",
             "old_locator",
             "new_locator",
             "score",
@@ -1337,6 +1630,7 @@ class HealingSelenium:
             "history_candidate_count",
             "rewrite_files_changed",
             "rewrite_occurrences",
+            "healed_screenshot_path",
         ]
         with open(csv_path, "w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -1363,18 +1657,18 @@ class HealingSelenium:
             failed = int(self.test_stats.get("failed", 0))
             skipped = int(self.test_stats.get("skipped", 0))
             healed = int(self.healing_event_count)
-            chart_total = max(1, passed + failed + skipped + healed)
+            healed_test_cases = len(self.healed_test_ids)
+            chart_total = max(1, passed + failed + skipped)
             pass_pct = self._pct(passed, chart_total)
             fail_pct = self._pct(failed, chart_total)
             skip_pct = self._pct(skipped, chart_total)
-            healed_pct = self._pct(healed, chart_total)
             pass_end = pass_pct
             fail_end = pass_end + fail_pct
             skip_end = fail_end + skip_pct
-            healed_end = min(100.0, skip_end + healed_pct)
             summary = {
                 "test_stats": dict(self.test_stats),
                 "total_healings": self.healing_event_count,
+                "healed_test_cases": healed_test_cases,
                 "library_enhancements": [
                     "DOM locator library + compact current-page HTML in LLM prompt",
                     "History-aware re-healing",
@@ -1394,12 +1688,16 @@ class HealingSelenium:
                 rows.append(
                     "<tr>"
                     f"<td>{self._html_escape(event.get('event'))}</td>"
+                    f"<td>{self._html_escape(event.get('test_case_id'))}</td>"
                     f"<td>{self._html_escape(event.get('test'))}</td>"
+                    f"<td><span class=\"status {self._html_escape(str(event.get('result_status', '')).lower())}\">{self._html_escape(event.get('result_status'))}</span></td>"
+                    f"<td><span class=\"status healed\">{self._html_escape(event.get('healed'))}</span></td>"
                     f"<td class=\"locator\">{self._html_escape(event.get('old_locator'))}</td>"
                     f"<td class=\"locator\">{self._html_escape(event.get('new_locator'))}</td>"
                     f"<td>{self._html_escape(event.get('score'))}</td>"
                     f"<td>{self._html_escape(event.get('candidate_count'))}</td>"
                     f"<td>{self._html_escape(event.get('rewrite_files_changed'))}</td>"
+                    f"<td class=\"locator\">{self._html_escape(event.get('healed_screenshot_path'))}</td>"
                     "</tr>"
                 )
             html = f"""<!doctype html>
@@ -1417,7 +1715,7 @@ class HealingSelenium:
     .note {{ color: #5f6f82; font-size: 13px; }}
     .pie {{ width: 260px; height: 260px; border-radius: 50%; background:
       conic-gradient(#28a745 0 {pass_end}%, #dc3545 {pass_end}% {fail_end}%,
-      #f5a623 {fail_end}% {skip_end}%, #168f65 {skip_end}% {healed_end}%, #d9e2ec {healed_end}% 100%);
+      #f5a623 {fail_end}% {skip_end}%, #d9e2ec {skip_end}% 100%);
       border: 10px solid white; box-shadow: 0 1px 4px rgba(16,24,40,.14); }}
     .legend {{ display: grid; gap: 8px; margin-top: 12px; }}
     .swatch {{ display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }}
@@ -1425,6 +1723,12 @@ class HealingSelenium:
     .barrow {{ display: grid; grid-template-columns: 88px 1fr 48px; align-items: center; gap: 8px; }}
     .track {{ height: 16px; background: #e6ebf1; border-radius: 999px; overflow: hidden; }}
     .fill {{ height: 100%; border-radius: 999px; }}
+    .status {{ display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 800; }}
+    .status.pass {{ background: #e8f7ee; color: #196b37; }}
+    .status.fail {{ background: #fdecec; color: #9d1c24; }}
+    .status.skip {{ background: #fff6df; color: #875c00; }}
+    .status.pending {{ background: #e6ebf1; color: #52616f; }}
+    .status.healed {{ background: #e6fff3; color: #087a4a; }}
     .locator {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }}
     table {{ width: 100%; border-collapse: collapse; margin-top: 18px; background: white; }}
     th, td {{ border-bottom: 1px solid #e6ebf1; padding: 9px; text-align: left; vertical-align: top; }}
@@ -1435,7 +1739,7 @@ class HealingSelenium:
 <body>
   <section class="bar">
     <div class="label">Self-healing execution overview</div>
-    <p>Real test totals are preserved. Healing is shown as a separate automation metric, not an extra executed test case.</p>
+    <p><strong>Test result accounting:</strong> Passed + Failed + Skipped = Executed. Healing is a separate locator-repair marker on top of a real test case.</p>
     <p class="note">CSV: healing_reports/healing_data.csv</p>
   </section>
   <section class="cards">
@@ -1443,42 +1747,40 @@ class HealingSelenium:
     <div class="card"><div class="label">Passed</div><div class="count">{self._html_escape(passed)}</div></div>
     <div class="card"><div class="label">Failed</div><div class="count">{self._html_escape(failed)}</div></div>
     <div class="card"><div class="label">Skipped</div><div class="count">{self._html_escape(skipped)}</div></div>
-    <div class="card"><div class="label">Healed</div><div class="count">{self._html_escape(healed)}</div></div>
+    <div class="card"><div class="label">Healed test cases</div><div class="count">{self._html_escape(healed_test_cases)}</div><div class="note">{self._html_escape(healed)} locator heal event(s)</div></div>
   </section>
   <section class="layout">
     <div class="card">
-      <div class="label">Status + healing pie</div>
+      <div class="label">Test result pie</div>
       <div class="pie"></div>
       <div class="legend">
         <div><span class="swatch" style="background:#28a745"></span>Passed: {self._html_escape(passed)}</div>
         <div><span class="swatch" style="background:#dc3545"></span>Failed: {self._html_escape(failed)}</div>
         <div><span class="swatch" style="background:#f5a623"></span>Skipped: {self._html_escape(skipped)}</div>
-        <div><span class="swatch" style="background:#168f65"></span>Healed locators: {self._html_escape(healed)}</div>
       </div>
+      <p class="note">This pie shows only Robot test outcomes.</p>
     </div>
     <div class="card">
-      <div class="label">Bar chart</div>
+      <div class="label">Healing impact</div>
       <div class="bars">
         <div class="barrow"><span>Executed</span><div class="track"><div class="fill" style="width:{self._pct(executed, max(executed, healed, 1))}%;background:#607d8b"></div></div><span>{self._html_escape(executed)}</span></div>
         <div class="barrow"><span>Passed</span><div class="track"><div class="fill" style="width:{self._pct(passed, max(executed, healed, 1))}%;background:#28a745"></div></div><span>{self._html_escape(passed)}</span></div>
         <div class="barrow"><span>Failed</span><div class="track"><div class="fill" style="width:{self._pct(failed, max(executed, healed, 1))}%;background:#dc3545"></div></div><span>{self._html_escape(failed)}</span></div>
         <div class="barrow"><span>Skipped</span><div class="track"><div class="fill" style="width:{self._pct(skipped, max(executed, healed, 1))}%;background:#f5a623"></div></div><span>{self._html_escape(skipped)}</span></div>
-        <div class="barrow"><span>Healed</span><div class="track"><div class="fill" style="width:{self._pct(healed, max(executed, healed, 1))}%;background:#168f65"></div></div><span>{self._html_escape(healed)}</span></div>
+        <div class="barrow"><span>Healed TCs</span><div class="track"><div class="fill" style="width:{self._pct(healed_test_cases, max(executed, healed_test_cases, 1))}%;background:#168f65"></div></div><span>{self._html_escape(healed_test_cases)}</span></div>
+        <div class="barrow"><span>Heal events</span><div class="track"><div class="fill" style="width:{self._pct(healed, max(executed, healed, 1))}%;background:#13a66b"></div></div><span>{self._html_escape(healed)}</span></div>
       </div>
-      <p class="note">Healed counts represent locator repairs during real tests. They are intentionally not included in executed test count.</p>
+      <p class="note">A test case can be both Passed and Healed. Healed test cases are not added to Executed; they are a marker on existing test case IDs.</p>
     </div>
   </section>
   <table>
-    <thead><tr><th>#</th><th>Test</th><th>Original locator</th><th>Healed locator</th><th>Score</th><th>Candidates</th><th>Files rewritten</th></tr></thead>
+    <thead><tr><th>#</th><th>Test Case ID</th><th>Test</th><th>Result</th><th>Healed</th><th>Original locator</th><th>Healed locator</th><th>Score</th><th>Candidates</th><th>Files rewritten</th><th>Highlighted screenshot</th></tr></thead>
     <tbody>{''.join(rows)}</tbody>
   </table>
 </body>
 </html>"""
             with open(html_path, "w", encoding="utf-8") as f:
                 f.write(html)
-            print(f"[Healing] Healing run summary HTML → {html_path}")
-            print(f"[Healing] Healing run summary JSON → {json_path}")
-            print(f"[Healing] Healing data CSV → {csv_path}")
             return {"html": html_path, "json": json_path, "csv": csv_path}
         except Exception as exc:
             print(f"[Healing] Healing run summary generation failed: {exc}")
@@ -1494,14 +1796,16 @@ class HealingSelenium:
         try:
             self.healing_event_count += 1
             score_report["healing_event_count"] = self.healing_event_count
+            healed_screenshot_path = self._capture_healed_element_screenshot(old_locator, new_locator)
+            if healed_screenshot_path:
+                score_report["healed_screenshot_path"] = healed_screenshot_path
             html_body = self._build_healing_report_html(old_locator, new_locator, score_report, rewrite_stats)
             paths = self._write_healing_report_files(old_locator, html_body, score_report)
             score_report["healing_report_paths"] = paths
             self._record_healing_event_summary(old_locator, new_locator, score_report, rewrite_stats)
             self._annotate_current_allure_test(old_locator, new_locator, score_report)
             self._attach_healing_report_to_allure(old_locator, html_body, score_report)
-            summary_paths = self._write_healing_run_summary()
-            self._attach_healing_summary_files_to_allure(summary_paths)
+            self._write_healing_run_summary()
             self._write_healing_environment_summary()
         except Exception as exc:
             print(f"[Healing] Healing report generation failed: {exc}")
