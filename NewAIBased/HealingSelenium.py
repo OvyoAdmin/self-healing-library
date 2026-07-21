@@ -38,6 +38,9 @@ OLLAMA_BASE_URL              default: http://localhost:11434
 OLLAMA_MODEL                 default: llama3
 HEALING_AUTOHEAL             default: true  (arg: auto_heal)
 HEALING_AUTOREWRITE          default: false (arg: auto_rewrite)
+HEALING_AI                   default: true  (arg: ai_healing / ai)
+HEALING_FROM_HISTORY         default: true  (arg: heal_from_history)
+HEALING_NON_AI               default: false (arg: non_ai_healing / non_ai)
 
 # Validation knobs
 HEALING_REQUIRE_VISIBLE      default: false
@@ -86,6 +89,7 @@ Heals-Rewrites-Then-Fails
 from __future__ import annotations
 import base64
 import csv
+import difflib
 import fnmatch
 import glob
 import inspect
@@ -118,6 +122,11 @@ class HealingSelenium:
         healed_file: str = "healed_locators.json",
         auto_heal: Optional[bool] = None,
         auto_rewrite: Optional[bool] = None,
+        ai_healing: Optional[bool] = None,
+        ai: Optional[bool] = None,
+        heal_from_history: Optional[bool] = None,
+        non_ai_healing: Optional[bool] = None,
+        non_ai: Optional[bool] = None,
         # Optional SeleniumLibrary init options
         sl_timeout: Optional[str] = None,       # e.g., "10 seconds"
         sl_implicit_wait: Optional[str] = None, # e.g., "0.5 seconds"
@@ -139,6 +148,11 @@ class HealingSelenium:
         # Switches (env defaults; args override)
         self.auto_heal = self._arg_or_env_bool(auto_heal, "HEALING_AUTOHEAL", True)
         self.auto_rewrite = self._arg_or_env_bool(auto_rewrite, "HEALING_AUTOREWRITE", False)
+        ai_value = ai_healing if ai_healing is not None else ai
+        self.ai_healing = self._arg_or_env_bool(ai_value, "HEALING_AI", True)
+        self.heal_from_history = self._arg_or_env_bool(heal_from_history, "HEALING_FROM_HISTORY", True)
+        non_ai_value = non_ai_healing if non_ai_healing is not None else non_ai
+        self.non_ai_healing = self._arg_or_env_bool(non_ai_value, "HEALING_NON_AI", False)
 
         # Validation knobs
         self.require_visible = self._arg_or_env_bool(None, "HEALING_REQUIRE_VISIBLE", False)
@@ -177,6 +191,8 @@ class HealingSelenium:
         self.healing_event_count = 0
         self.healing_events: List[Dict[str, Any]] = []
         self.healed_test_ids = set()
+        self.active_test_identity: Dict[str, Any] = {}
+        self.test_results_by_id: Dict[str, str] = {}
         self.test_stats = {"executed": 0, "passed": 0, "failed": 0, "skipped": 0}
         self.ROBOT_LIBRARY_LISTENER = self
 
@@ -197,6 +213,8 @@ class HealingSelenium:
             f"Artifacts dir:{os.getenv('HEALING_ARTIFACT_DIR', 'healing_screens')}\n"
             f"[HealingSelenium] Allure-Report:{self.allure_report} "
             f"Allure-Summary:{self.allure_summary} "
+            f"AI-Healing:{self.ai_healing} History-Healing:{self.heal_from_history} "
+            f"Non-AI-Healing:{self.non_ai_healing} "
             f"Report dir:{os.getenv('HEALING_REPORT_DIR', 'healing_reports')}\n"
             f"[HealingSelenium] Defaults → url:{self.default_url} browser:{self.default_browser}\n"
         )
@@ -219,6 +237,10 @@ class HealingSelenium:
             "Disable Auto Healing": self.disable_auto_healing,
             "Set Auto Healing": self.set_auto_healing,
             "Get Auto Healing Status": self.get_auto_healing_status,
+            "Enable AI Healing": self.enable_ai_healing,
+            "Disable AI Healing": self.disable_ai_healing,
+            "Set AI Healing": self.set_ai_healing,
+            "Get AI Healing Status": self.get_ai_healing_status,
             "Enable Auto Rewrite": self.enable_auto_rewrite,
             "Disable Auto Rewrite": self.disable_auto_rewrite,
             "Set Auto Rewrite": self.set_auto_rewrite,
@@ -260,6 +282,13 @@ class HealingSelenium:
         return self._sl.run_keyword(name, args, kwargs)
 
     # -------------------------- Robot listener summary hooks --------------------------
+    def start_test(self, *args):
+        """Capture the active Robot test identity before any healing event fires."""
+        try:
+            self.active_test_identity = self._get_listener_test_identity(*args) or {}
+        except Exception as exc:
+            print(f"[Healing] Listener test identity capture failed: {exc}")
+
     def end_test(self, *args):
         """
         Robot listener hook. Tracks real test status counts so healing summaries can
@@ -279,10 +308,13 @@ class HealingSelenium:
                 self.test_stats["skipped"] += 1
             else:
                 self.test_stats["failed"] += 1
-            identity = self._get_test_identity()
+            identity = self._get_listener_test_identity(*args) or self.active_test_identity or self._get_test_identity()
+            if identity.get("test_case_id"):
+                self.test_results_by_id[identity["test_case_id"]] = status
             for event in self.healing_events:
                 if event.get("test_case_id") == identity["test_case_id"]:
                     event["result_status"] = status
+            self.active_test_identity = {}
             self._write_healing_run_summary()
             self._write_healing_environment_summary()
         except Exception as exc:
@@ -299,6 +331,13 @@ class HealingSelenium:
                 if event.get("result_status") == "PENDING":
                     event["result_status"] = "FAIL"
                     changed = True
+            if changed and self.active_test_identity:
+                test_case_id = self.active_test_identity.get("test_case_id")
+                if test_case_id and test_case_id not in self.test_results_by_id:
+                    self.test_results_by_id[test_case_id] = "FAIL"
+                    self.test_stats["executed"] += 1
+                    self.test_stats["failed"] += 1
+            self.active_test_identity = {}
             
             summary_paths = self._write_healing_run_summary()
             self._inject_allure_suite_teardown_attachments(summary_paths)
@@ -513,7 +552,6 @@ class HealingSelenium:
             except Exception:
                 if not drv.get_screenshot_as_file(png_path):
                     return None
-            print(f"[Healing] Healed element screenshot → {png_path}")
             return png_path
         except Exception as exc:
             print(f"[Healing] ⚠️ Healed element screenshot failed: {exc}")
@@ -764,18 +802,35 @@ class HealingSelenium:
         """
         Extract simple keywords from the broken locator to help the LLM (e.g., 'login', 'email').
         """
-        tokens = re.findall(r"[A-Za-z0-9_]{3,}", old_locator or "")
+        raw_tokens = re.findall(r"[A-Za-z0-9_]{2,}", old_locator or "")
         common = {
-            "xpath", "css", "id", "name", "div", "span", "button", "input",
-            "class", "type", "text", "contains", "and", "or", "following", "preceding"
+            "xpath", "css", "id", "name", "div", "span", "button", "input", "select",
+            "class", "type", "text", "contains", "starts", "with", "and", "or",
+            "following", "preceding", "true", "false"
         }
-        out = [t.lower() for t in tokens if t.lower() not in common]
+        out: List[str] = []
+        for token in raw_tokens:
+            parts = [token]
+            parts.extend(re.split(r"[_\-.:\s]+", token))
+            camel = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", token)
+            parts.extend(camel.split())
+            alpha = re.sub(r"[^A-Za-z]+", "", token)
+            if alpha and alpha != token:
+                parts.append(alpha)
+            for part in parts:
+                value = part.lower().strip("_-.:")
+                if len(value) >= 2 and value not in common:
+                    out.append(value)
+                    if len(value) >= 4:
+                        out.append(value[:4])
+                    if len(value) >= 3:
+                        out.append(value[:3])
         # Keep first few distinct hints
         uniq: List[str] = []
         for t in out:
-            if t not in uniq:
+            if t not in uniq and t not in common:
                 uniq.append(t)
-            if len(uniq) >= 10:
+            if len(uniq) >= 12:
                 break
         return uniq
 
@@ -947,6 +1002,74 @@ class HealingSelenium:
 
         return min(score, 20), reasons
 
+    def _element_nearby_context(self, element: Any) -> str:
+        """
+        Build a compact text/attribute fingerprint for the matched element plus
+        nearby label, parent, and sibling context. Used to keep deterministic
+        non-AI candidates tied to the broken locator's intent.
+        """
+        script = r"""
+            const el = arguments[0];
+            const norm = s => (s || '').toString().replace(/\s+/g, ' ').trim();
+            const attrNames = [
+                'id', 'name', 'type', 'class', 'aria-label', 'role', 'title',
+                'placeholder', 'value', 'href', 'data-test', 'data-testid',
+                'data-qa', 'data-cy'
+            ];
+            const parts = [];
+            const add = (label, value) => {
+                const v = norm(value);
+                if (v) parts.push(label + '=' + v.slice(0, 180));
+            };
+            const addAttrs = (prefix, node) => {
+                if (!node || !node.getAttribute) return;
+                parts.push(prefix + ':tag=' + String(node.tagName || '').toLowerCase());
+                for (const name of attrNames) add(prefix + ':' + name, node.getAttribute(name));
+                add(prefix + ':text', node.innerText || node.textContent || '');
+            };
+
+            addAttrs('self', el);
+            if (el.id) {
+                for (const label of Array.from(document.querySelectorAll('label'))) {
+                    if (label.getAttribute('for') === el.id) add('label-for', label.innerText || label.textContent || '');
+                }
+            }
+            let parent = el.parentElement;
+            for (let depth = 1; parent && depth <= 2; depth++) {
+                addAttrs('parent' + depth, parent);
+                parent = parent.parentElement;
+            }
+            for (const side of ['previousElementSibling', 'nextElementSibling']) {
+                const sib = el[side];
+                if (sib) addAttrs(side, sib);
+            }
+            return parts.join(' | ').slice(0, 4000);
+        """
+        try:
+            drv = getattr(self._sl, "driver", None)
+            if not drv:
+                return ""
+            return str(drv.execute_script(script, element) or "")
+        except Exception:
+            return ""
+
+    def _context_hint_hits(self, element: Any, hints: List[str]) -> Tuple[bool, List[str], str]:
+        context = self._element_nearby_context(element)
+        context_l = context.lower()
+        meaningful = [h for h in hints if len(h) >= 2 and not h.isdigit()]
+        if not meaningful:
+            return False, [], context[:500]
+        hits = []
+        words = re.findall(r"[a-z0-9_]{3,}", context_l)
+        for h in meaningful:
+            if h in context_l:
+                hits.append(h)
+                continue
+            close = difflib.get_close_matches(h, words, n=1, cutoff=0.7)
+            if close:
+                hits.append(f"{h}~(similar to {close[0]})")
+        return bool(hits), hits[:8], context[:500]
+
     def _score_locator_candidate(
         self,
         candidate: Dict[str, Any],
@@ -961,6 +1084,7 @@ class HealingSelenium:
         locators. Invalid candidates remain in the report but are not selected.
         """
         normalized = self._normalize_locator(candidate.get("type"), candidate.get("locator"))
+        elems: List[Any] = []
         count = 0
         visible_count = 0
         error = None
@@ -975,6 +1099,11 @@ class HealingSelenium:
         visible_ok = visible_count > 0
         unique_ok = count == 1
         config_ok = exists and (visible_ok or not self.require_visible) and (unique_ok or not self.require_unique)
+        source = str(candidate.get("source") or "ai").lower()
+        is_non_ai = source == "non-ai"
+        non_ai_context_ok = True
+        context_hint_hits: List[str] = []
+        context_preview = ""
 
         score = 0
         reasons: List[str] = []
@@ -998,6 +1127,25 @@ class HealingSelenium:
             reasons.append(f"{count} matches")
             if self.require_unique:
                 reasons.append("fails unique requirement")
+
+        if is_non_ai:
+            if not unique_ok:
+                config_ok = False
+                reasons.append("non-AI rejected: locator must be unique")
+            elif elems:
+                non_ai_context_ok, context_hint_hits, context_preview = self._context_hint_hits(elems[0], hints)
+                if non_ai_context_ok:
+                    score += 22
+                    reasons.append(
+                        "non-AI context verified near matched element: "
+                        + ", ".join(context_hint_hits[:5])
+                    )
+                else:
+                    config_ok = False
+                    reasons.append("non-AI rejected: no broken-locator hint found in element/nearby DOM context")
+            else:
+                non_ai_context_ok = False
+                config_ok = False
 
         normalized_l = str(normalized or "").lower()
         locator_l = str(candidate.get("locator") or "").lower()
@@ -1038,6 +1186,9 @@ class HealingSelenium:
         if re.search(r":nth-child|\[\d+\]|\(\s*//", normalized_l):
             score -= 6
             reasons.append("penalized for positional/brittle pattern")
+        if candidate.get("weak"):
+            score -= 25
+            reasons.append("penalized generic non-AI fallback")
         if len(str(normalized or "")) <= 140:
             score += 3
             reasons.append("compact selector")
@@ -1061,6 +1212,10 @@ class HealingSelenium:
             "score": max(0, int(score)),
             "reasons": reasons[:12],
             "source": candidate.get("source") or "ai",
+            "weak": bool(candidate.get("weak")),
+            "non_ai_context_ok": non_ai_context_ok if is_non_ai else None,
+            "context_hint_hits": context_hint_hits,
+            "context_preview": context_preview,
             "ai_reason": candidate.get("reason"),
             "ai_confidence": candidate.get("ai_confidence"),
             "error": error,
@@ -1094,6 +1249,8 @@ class HealingSelenium:
             "requirements": {
                 "visible": self.require_visible,
                 "unique": self.require_unique,
+                "non_ai_unique": True,
+                "non_ai_context_match": True,
                 "retries": self.validate_retries,
                 "interval_ms": self.validate_retry_interval_ms,
             },
@@ -1105,7 +1262,8 @@ class HealingSelenium:
         print(
             f"Candidates: total={score_report.get('candidate_count')} "
             f"ai={score_report.get('ai_candidate_count', 0)} "
-            f"history={score_report.get('history_candidate_count', 0)}"
+            f"snapshot_history={score_report.get('history_candidate_count', 0)} "
+            f"non_ai={score_report.get('non_ai_candidate_count', 0)}"
         )
         selected = score_report.get("selected") or {}
         selected_norm = selected.get("normalized_locator")
@@ -1126,7 +1284,7 @@ class HealingSelenium:
         if selected_norm:
             print(f"[Healing] Selected top-scored locator: {selected_norm} (score={selected.get('score')})")
         else:
-            print("[Healing] No AI candidate passed live DOM validation/scoring requirements.")
+            print("[Healing] No locator candidate passed live DOM validation/scoring requirements.")
         print("========================================\n")
 
     def _html_escape(self, value: Any) -> str:
@@ -1175,6 +1333,7 @@ class HealingSelenium:
         score = selected.get("score", "")
         ai_count = score_report.get("ai_candidate_count", 0)
         history_count = score_report.get("history_candidate_count", 0)
+        non_ai_count = score_report.get("non_ai_candidate_count", 0)
         total_count = score_report.get("candidate_count", 0)
         screenshot_path = score_report.get("healed_screenshot_path")
         screenshot_data_url = self._image_data_url(screenshot_path)
@@ -1196,102 +1355,196 @@ class HealingSelenium:
 
         rows: List[str] = []
         for item in score_report.get("candidates", []):
-            row_cls = "selected" if item.get("normalized_locator") == selected_norm and item.get("ok") else ""
+            is_ok = bool(item.get("ok"))
+            row_cls = "selected" if item.get("normalized_locator") == selected_norm and is_ok else ""
             reasons = "<br>".join(self._html_escape(r) for r in (item.get("reasons") or []))
+            status_badge = "<span class='badge-ok'>OK</span>" if is_ok else "<span class='badge-fail'>FAIL</span>"
+            
             rows.append(
-                "<tr class=\"%s\">"
-                "<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>"
+                f"<tr class='{row_cls}'>"
+                f"<td>{self._html_escape(item.get('score_rank'))}</td>"
+                f"<td>{self._html_escape(item.get('score'))}</td>"
+                f"<td>{status_badge}</td>"
+                f"<td>{self._html_escape(item.get('count'))}</td>"
+                f"<td>{self._html_escape(item.get('source'))}</td>"
+                f"<td class='code-text'>{self._html_escape(item.get('normalized_locator'))}</td>"
+                f"<td><div style='max-height: 100px; overflow-y: auto; font-size: 0.85rem;'>{reasons}</div></td>"
                 "</tr>"
-                % (
-                    row_cls,
-                    self._html_escape(item.get("score_rank")),
-                    self._html_escape(item.get("score")),
-                    self._html_escape(item.get("ok")),
-                    self._html_escape(item.get("count")),
-                    self._html_escape(item.get("source")),
-                    self._html_escape(item.get("normalized_locator")),
-                    reasons,
-                )
             )
 
         if rewrite_stats is None:
-            rewrite_text = "No source rewrite performed."
+            rewrite_text = "No source rewrite performed (Not written)."
             rewrite_class = "muted"
         else:
+            files_written = ", ".join(rewrite_stats.get("written_files_with_lines", []))
             rewrite_text = (
                 f"{rewrite_stats.get('files_changed', 0)} file(s), "
-                f"{rewrite_stats.get('occurrences_replaced', 0)} occurrence(s)"
-                f"{' - dry run' if rewrite_stats.get('dry_run') else ''}"
+                f"{rewrite_stats.get('occurrences_replaced', 0)} occurrence(s) "
+                f"({rewrite_stats.get('dry_run') and 'DRY-RUN' or 'WRITTEN'})."
             )
+            if files_written:
+                rewrite_text += f" Changed: {files_written}"
             rewrite_class = "ok" if rewrite_stats.get("files_changed", 0) else "muted"
 
         generated_at = self._iso_now()
-        return f"""<!doctype html>
-<html>
+        source_display = "AI HEALED" if score_report.get("ai_count", 0) > 0 else "AUTO HEALED"
+        ai_class = "ai-healed" if source_display == "AI HEALED" else ""
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealingSelenium - AI Healing Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body {{ margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #18202a; background: #f6f8fb; }}
-    .wrap {{ padding: 18px; }}
-    .heal-bar {{ border-left: 8px solid #13a66b; background: #e9fbf3; padding: 16px 18px; border-radius: 8px; box-shadow: 0 1px 4px rgba(16, 24, 40, .10); }}
-    .badge {{ display: inline-block; padding: 4px 9px; border-radius: 999px; background: #13a66b; color: white; font-size: 12px; font-weight: 800; letter-spacing: .04em; }}
-    .title {{ margin-top: 10px; font-size: 18px; font-weight: 750; }}
-    .locator {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }}
-    .meta {{ display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }}
-    .pill {{ background: white; border: 1px solid #d9e2ec; border-radius: 999px; padding: 6px 10px; font-size: 13px; }}
-    .pill.ok {{ border-color: #9bdfc2; background: #f0fff8; }}
-    .pill.muted {{ color: #5f6f82; }}
-    .grid {{ display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }}
-    .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 14px; }}
-    .shot-card {{ padding: 10px; }}
-    .shot {{ display: block; width: 100%; max-height: 520px; object-fit: contain; border: 1px solid #d9e2ec; border-radius: 6px; background: #f6f8fb; }}
-    .label {{ color: #5f6f82; font-size: 12px; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }}
-    table {{ width: 100%; border-collapse: collapse; background: white; margin-top: 14px; border-radius: 8px; overflow: hidden; }}
-    th, td {{ text-align: left; border-bottom: 1px solid #e6ebf1; padding: 9px; vertical-align: top; font-size: 13px; }}
-    th {{ background: #eef3f8; color: #344254; }}
-    tr.selected td {{ background: #e9fbf3; font-weight: 650; }}
+    :root {{
+      --bg-base: #0b0f19;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glow-success: rgba(16, 185, 129, 0.4);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }}
+    body {{
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }}
+    .container {{ max-width: 1200px; width: 100%; animation: fadeIn 0.8s ease-out; }}
+    @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(20px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+    .header-banner {{
+      background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 30px; margin-bottom: 24px; position: relative; overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }}
+    .header-banner::before {{
+      content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+      background: var(--gradient-success); box-shadow: 0 0 20px var(--glow-success);
+    }}
+    .status-badge {{
+      display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1);
+      color: var(--accent-green); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem;
+      font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+      border: 1px solid rgba(16, 185, 129, 0.2); margin-bottom: 16px; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }}
+    .status-badge.ai-healed {{
+      background: rgba(139, 92, 246, 0.1); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.3);
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+    }}
+    .status-badge i {{
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: currentColor; box-shadow: 0 0 8px currentColor; animation: pulse 2s infinite;
+    }}
+    @keyframes pulse {{ 0% {{ box-shadow: 0 0 0 0 currentColor; }} 70% {{ box-shadow: 0 0 0 8px rgba(0,0,0,0); }} 100% {{ box-shadow: 0 0 0 0 rgba(0,0,0,0); }} }}
+    .locator-transition {{ font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }}
+    .locator-box {{ background: rgba(0, 0, 0, 0.3); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--glass-border); word-break: break-all; }}
+    .locator-box.old {{ border-bottom: 2px solid var(--accent-red); color: #fca5a5; }}
+    .locator-box.new {{ border-bottom: 2px solid var(--accent-green); color: #6ee7b7; background: rgba(16, 185, 129, 0.05); }}
+    .arrow {{ color: var(--text-muted); font-weight: 800; }}
+    .metrics-row {{ display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }}
+    .metric {{
+      background: rgba(255, 255, 255, 0.02); padding: 8px 16px; border-radius: 6px; font-size: 0.9rem;
+      display: flex; align-items: center; gap: 8px; border: 1px solid var(--glass-border);
+    }}
+    .metric-value {{ font-weight: 800; color: #fff; }}
+    .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 24px; }}
+    .card {{
+      background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--glass-border);
+      border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }}
+    .card:hover {{ transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border-color: rgba(255, 255, 255, 0.15); }}
+    .card-title {{ font-size: 0.85rem; text-transform: uppercase; font-weight: 800; color: var(--text-muted); margin-bottom: 12px; letter-spacing: 1px; }}
+    .card-content {{ font-size: 0.95rem; line-height: 1.6; color: #cbd5e1; }}
+    .reason-list {{ margin: 0; padding-left: 16px; }}
+    .reason-list li {{ margin-bottom: 6px; }}
+    img.shot {{ max-width: 100%; max-height: 350px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }}
+    table {{
+      width: 100%; border-collapse: separate; border-spacing: 0; background: var(--glass-bg);
+      backdrop-filter: blur(12px); border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }}
+    th, td {{ padding: 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }}
+    th {{ background: rgba(0, 0, 0, 0.2); color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }}
+    tr {{ transition: background 0.2s ease; }}
+    tr:hover {{ background: rgba(255, 255, 255, 0.05); }}
+    tr.selected td {{ background: rgba(16, 185, 129, 0.08); position: relative; }}
+    tr.selected td:first-child::before {{
+      content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 3px;
+      background: var(--accent-green); box-shadow: 0 0 10px var(--glow-success);
+    }}
+    .badge-ok {{ background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.3); }}
+    .badge-fail {{ background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid rgba(239, 68, 68, 0.3); }}
+    .code-text {{ font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #e2e8f0; word-break: break-all; }}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="heal-bar">
-      <span class="badge">HEALED ELEMENT</span>
-      <div class="title"><span class="locator">{self._html_escape(old_locator)}</span> &rarr; <span class="locator">{self._html_escape(selected_norm)}</span></div>
-      <div class="meta">
-        <span class="pill ok">Selected score: {self._html_escape(score)}</span>
-        <span class="pill">Candidates: {self._html_escape(total_count)}</span>
-        <span class="pill">AI: {self._html_escape(ai_count)}</span>
-        <span class="pill">History: {self._html_escape(history_count)}</span>
-        <span class="pill {rewrite_class}">Rewrite: {self._html_escape(rewrite_text)}</span>
-        <span class="pill muted">Generated: {self._html_escape(generated_at)}</span>
+  <div class="container">
+    <div class="header-banner">
+      <div class="status-badge {ai_class}"><i></i> {source_display}</div>
+      <div class="locator-transition">
+        <div class="locator-box old">{self._html_escape(old_locator)}</div>
+        <div class="arrow">➔</div>
+        <div class="locator-box new">{self._html_escape(selected_norm)}</div>
       </div>
-    </section>
+      <div class="metrics-row">
+        <div class="metric">Selected Score <span class="metric-value">{self._html_escape(score)}</span></div>
+        <div class="metric">Candidates <span class="metric-value">{self._html_escape(total_count)}</span></div>
+        <div class="metric">AI: <span class="metric-value">{self._html_escape(ai_count)}</span></div>
+        <div class="metric">History: <span class="metric-value">{self._html_escape(history_count)}</span></div>
+        <div class="metric">Non-AI: <span class="metric-value">{self._html_escape(non_ai_count)}</span></div>
+        <div class="metric">Generated: <span class="metric-value">{self._html_escape(generated_at)}</span></div>
+      </div>
+    </div>
 
     <div class="grid">
       <div class="card">
-        <div class="label">Original locator</div>
-        <div class="locator">{self._html_escape(old_locator)}</div>
+        <div class="card-title">Library Enhancements Active</div>
+        <div class="card-content">
+          <ul class="reason-list">
+            <li>AI healing uses full DOM context and intelligent inference.</li>
+            <li>Historical heals are cross-referenced with deterministic scoring.</li>
+            <li>Candidates are vigorously ranked using contextual alignment.</li>
+            <li>The final selected locator successfully bypassed the element failure.</li>
+          </ul>
+        </div>
       </div>
       <div class="card">
-        <div class="label">Final suggested locator</div>
-        <div class="locator">{self._html_escape(new_locator)}</div>
-      </div>
-      <div class="card">
-        <div class="label">Library enhancements active in this heal</div>
-        <ul>
-          <li>Current DOM locator library plus compact current-page HTML are included in the AI prompt.</li>
-          <li>Previous healing history is used as evidence and scored against the current DOM.</li>
-          <li>AI and history candidates are ranked together with deterministic scoring.</li>
-          <li>The selected locator is persisted with score report, audit trail, and optional source rewrite.</li>
-          <li>Allure receives this healed-element bar without adding an extra test case.</li>
-        </ul>
+        <div class="card-title">Rewrite Operation Details</div>
+        <div class="card-content code-text" style="color: #6ee7b7;">
+            {self._html_escape(rewrite_text)}
+        </div>
       </div>
       {screenshot_html}
     </div>
 
     <table>
       <thead>
-        <tr><th>Rank</th><th>Score</th><th>OK</th><th>Matches</th><th>Source</th><th>Locator</th><th>Scoring reasons</th></tr>
+        <tr>
+          <th>Rnk</th>
+          <th>Score</th>
+          <th>Status</th>
+          <th>Matches</th>
+          <th>Source</th>
+          <th>Locator Candidate</th>
+          <th>Reasoning</th>
+        </tr>
       </thead>
       <tbody>
         {''.join(rows)}
@@ -1351,7 +1604,6 @@ class HealingSelenium:
                 name=f"Self-Healing Score JSON - {self._sanitize_name(old_locator)[:70]}",
                 attachment_type=json_type or "application/json",
             )
-            print("[Healing] Allure healing report attached.")
         except Exception as exc:
             print(f"[Healing] Allure attachment failed: {exc}")
 
@@ -1380,7 +1632,6 @@ class HealingSelenium:
                 with open(json_path, "r", encoding="utf-8") as f:
                     json_type = getattr(AttachmentType, "JSON", None)
                     attach(f.read(), name="Healing Run Summary JSON", attachment_type=json_type or "application/json")
-            print("[Healing] Allure healing dashboard/CSV attached.")
         except Exception as exc:
             print(f"[Healing] Allure summary attachment failed: {exc}")
 
@@ -1448,7 +1699,6 @@ class HealingSelenium:
             
             with open(root_container, "w", encoding="utf-8") as f:
                 json.dump(data, f)
-            print("[Healing] Allure suite teardown attachments injected.")
         except Exception as exc:
             print(f"[Healing] Allure suite teardown injection failed: {exc}")
 
@@ -1464,26 +1714,67 @@ class HealingSelenium:
             tags = BuiltIn().get_variable_value("@{TEST TAGS}")
             if tags is None:
                 tags = BuiltIn().get_variable_value("${TEST TAGS}") or []
-            if isinstance(tags, str):
-                tags = re.split(r"[, ]+", tags.strip()) if tags.strip() else []
-            return [str(tag) for tag in tags]
+            return self._coerce_tags(tags)
         except Exception:
             return []
 
-    def _get_test_case_id(self) -> str:
-        tags = self._get_robot_tags()
+    def _coerce_tags(self, tags: Any) -> List[str]:
+        if tags is None:
+            return []
+        if isinstance(tags, str):
+            return [tag for tag in re.split(r"[, ]+", tags.strip()) if tag]
+        try:
+            return [str(tag) for tag in tags if str(tag)]
+        except Exception:
+            return [str(tags)] if str(tags) else []
+
+    def _derive_test_case_id(self, tags: List[str], test_name: str) -> str:
         for tag in tags:
             if re.match(r"(?i)^(TC|TEST|CASE|ID)[-_]?\d+", tag) or re.match(r"(?i)^TC[_-]?\w+", tag):
                 return tag
-        test_name = self._get_robot_context_value("${TEST NAME}", "Unknown Robot test")
         return self._sanitize_name(test_name)[:80] or "Unknown"
 
+    def _get_test_case_id(self) -> str:
+        tags = self._get_robot_tags()
+        test_name = self._get_robot_context_value("${TEST NAME}", "Unknown Robot test")
+        return self._derive_test_case_id(tags, test_name)
+
+    def _get_listener_test_identity(self, *args) -> Dict[str, Any]:
+        data = args[0] if args else None
+        result = args[-1] if args else None
+        test_name = (
+            getattr(data, "name", None)
+            or getattr(result, "name", None)
+            or self._get_robot_context_value("${TEST NAME}", "Unknown Robot test")
+        )
+        longname = getattr(result, "longname", None) or getattr(data, "longname", None) or ""
+        suite_name = (
+            getattr(getattr(data, "parent", None), "longname", None)
+            or getattr(getattr(result, "parent", None), "longname", None)
+            or self._get_robot_context_value("${SUITE NAME}", "Unknown Robot suite")
+        )
+        if longname and (not suite_name or suite_name == "Unknown Robot suite") and str(longname).endswith(str(test_name)):
+            suite_name = str(longname)[: -len(str(test_name))].rstrip(".") or suite_name
+        tags_value = getattr(data, "tags", None)
+        if tags_value is None:
+            tags_value = getattr(result, "tags", None)
+        tags = self._coerce_tags(tags_value)
+        return {
+            "test_case_id": self._derive_test_case_id(tags, str(test_name)),
+            "test": str(test_name),
+            "suite": str(suite_name),
+            "tags": tags,
+            "tags_csv": ",".join(tags),
+        }
+
     def _get_test_identity(self) -> Dict[str, Any]:
+        if self.active_test_identity:
+            return dict(self.active_test_identity)
         test_name = self._get_robot_context_value("${TEST NAME}", "Unknown Robot test")
         suite_name = self._get_robot_context_value("${SUITE NAME}", "Unknown Robot suite")
         tags = self._get_robot_tags()
         return {
-            "test_case_id": self._get_test_case_id(),
+            "test_case_id": self._derive_test_case_id(tags, test_name),
             "test": test_name,
             "suite": suite_name,
             "tags": tags,
@@ -1514,9 +1805,10 @@ class HealingSelenium:
             "<div>"
             "<h3>HealingSelenium library enhancements</h3>"
             "<ul>"
-            "<li>LLM prompt uses the current DOM locator library and compact current-page HTML.</li>"
+            "<li>When AI healing is enabled, the LLM prompt uses the current DOM locator library and compact current-page HTML.</li>"
             "<li>Previous healing history is supplied to the LLM as evidence, not reused blindly.</li>"
-            "<li>AI and history candidates are scored together against the live DOM.</li>"
+            "<li>AI, snapshot/history, and optional non-AI candidates are scored together against the live DOM.</li>"
+            "<li>Non-AI candidates are rejected unless they are unique and match nearby DOM context from the broken locator.</li>"
             "<li>The selected healed locator is persisted with a score report and audit trail.</li>"
             "<li>The healed element bar and score table are attached to the Allure test.</li>"
             "<li>Healing totals, dashboard, and CSV are attached without adding fake test cases.</li>"
@@ -1549,7 +1841,7 @@ class HealingSelenium:
             dynamic.parameter("healed_from", old_locator)
             dynamic.parameter("healed_to", new_locator)
             dynamic.parameter("healing_score", str(selected.get("score", "")))
-            print("[Healing] Allure current test labeled as self-healed.")
+            dynamic.parameter("healing_source", str(selected.get("source", "")))
         except Exception as exc:
             print(f"[Healing] Allure dynamic labeling failed: {exc}")
 
@@ -1583,6 +1875,15 @@ class HealingSelenium:
         selected = score_report.get("selected") or {}
         identity = self._get_test_identity()
         self.healed_test_ids.add(identity["test_case_id"])
+        changed = int((rewrite_stats or {}).get("files_changed", 0))
+        dry_run = bool((rewrite_stats or {}).get("dry_run", False))
+        initial_status = "FAIL" if (self.fail_on_heal or (self.fail_after_rewrite and changed and not dry_run)) else "PENDING"
+        
+        write_status = "NOT_WRITTEN"
+        if changed > 0:
+            write_status = "DRY_RUN" if dry_run else "WRITTEN"
+        files_written = ", ".join((rewrite_stats or {}).get("written_files_with_lines", []))
+
         event = {
             "event": self.healing_event_count,
             "ts": self._iso_now(),
@@ -1590,14 +1891,18 @@ class HealingSelenium:
             "test": identity["test"],
             "suite": identity["suite"],
             "tags": identity["tags_csv"],
-            "result_status": "PENDING",
+            "result_status": initial_status,
             "healed": "YES",
             "old_locator": old_locator,
             "new_locator": new_locator,
             "score": selected.get("score"),
+            "selected_source": selected.get("source"),
+            "write_status": write_status,
+            "files_written": files_written,
             "candidate_count": score_report.get("candidate_count", 0),
             "ai_candidate_count": score_report.get("ai_candidate_count", 0),
             "history_candidate_count": score_report.get("history_candidate_count", 0),
+            "non_ai_candidate_count": score_report.get("non_ai_candidate_count", 0),
             "rewrite_files_changed": (rewrite_stats or {}).get("files_changed", 0),
             "rewrite_occurrences": (rewrite_stats or {}).get("occurrences_replaced", 0),
             "healed_screenshot_path": score_report.get("healed_screenshot_path", ""),
@@ -1607,7 +1912,10 @@ class HealingSelenium:
             "[Healing] Healed data → "
             f"test_case_id={event['test_case_id']} "
             f"status={event['result_status']} "
+            f"write_status={event['write_status']} "
+            f"files_written={event['files_written']} "
             f"score={event['score']} "
+            f"source={event['selected_source']} "
             f"old={self._short_log_value(old_locator)} "
             f"new={self._short_log_value(new_locator)}"
         )
@@ -1625,9 +1933,13 @@ class HealingSelenium:
             "old_locator",
             "new_locator",
             "score",
+            "selected_source",
+            "write_status",
+            "files_written",
             "candidate_count",
             "ai_candidate_count",
             "history_candidate_count",
+            "non_ai_candidate_count",
             "rewrite_files_changed",
             "rewrite_occurrences",
             "healed_screenshot_path",
@@ -1665,14 +1977,19 @@ class HealingSelenium:
             pass_end = pass_pct
             fail_end = pass_end + fail_pct
             skip_end = fail_end + skip_pct
+            healed_pct = self._pct(healed_test_cases, chart_total)
+            unhealed_count = max(0, executed - healed_test_cases)
             summary = {
                 "test_stats": dict(self.test_stats),
                 "total_healings": self.healing_event_count,
                 "healed_test_cases": healed_test_cases,
+                "ai_healing_enabled": self.ai_healing,
+                "non_ai_healing_enabled": self.non_ai_healing,
                 "library_enhancements": [
-                    "DOM locator library + compact current-page HTML in LLM prompt",
+                    "DOM locator library + compact current-page HTML in LLM prompt when AI is enabled",
                     "History-aware re-healing",
-                    "AI and history candidates scored together",
+                    "AI, snapshot/history, and optional non-AI candidates scored together",
+                    "Non-AI candidates require unique live DOM match and nearby context verification",
                     "Selected locator persisted with score report and audit trail",
                     "Allure healed-element bar attached to real tests only",
                     "No synthetic Allure test cases emitted",
@@ -1692,91 +2009,185 @@ class HealingSelenium:
                     f"<td>{self._html_escape(event.get('test'))}</td>"
                     f"<td><span class=\"status {self._html_escape(str(event.get('result_status', '')).lower())}\">{self._html_escape(event.get('result_status'))}</span></td>"
                     f"<td><span class=\"status healed\">{self._html_escape(event.get('healed'))}</span></td>"
-                    f"<td class=\"locator\">{self._html_escape(event.get('old_locator'))}</td>"
-                    f"<td class=\"locator\">{self._html_escape(event.get('new_locator'))}</td>"
+                    f"<td class=\"locator\"><span class=\"old\">{self._html_escape(event.get('old_locator'))}</span></td>"
+                    f"<td class=\"locator\"><span class=\"new\">{self._html_escape(event.get('new_locator'))}</span></td>"
                     f"<td>{self._html_escape(event.get('score'))}</td>"
+                    f"<td>{self._html_escape(event.get('selected_source'))}</td>"
+                    f"<td><span class=\"write-status {self._html_escape(str(event.get('write_status', '')).lower())}\">{self._html_escape(event.get('write_status'))}</span></td>"
+                    f"<td>{self._html_escape(event.get('files_written'))}</td>"
                     f"<td>{self._html_escape(event.get('candidate_count'))}</td>"
-                    f"<td>{self._html_escape(event.get('rewrite_files_changed'))}</td>"
+                    f"<td>{self._html_escape(event.get('ai_candidate_count'))}</td>"
+                    f"<td>{self._html_escape(event.get('history_candidate_count'))}</td>"
+                    f"<td>{self._html_escape(event.get('non_ai_candidate_count'))}</td>"
+                    f"<td>{self._html_escape(event.get('rewrite_occurrences'))}</td>"
                     f"<td class=\"locator\">{self._html_escape(event.get('healed_screenshot_path'))}</td>"
                     "</tr>"
                 )
-            html = f"""<!doctype html>
-<html>
+            html = f"""<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealingSelenium - Self-Healing Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 20px; color: #18202a; background: #f6f8fb; }}
-    .bar {{ border-left: 8px solid #13a66b; background: #e9fbf3; padding: 16px; border-radius: 8px; box-shadow: 0 1px 4px rgba(16,24,40,.1); }}
-    .layout {{ display: grid; grid-template-columns: minmax(260px, 420px) 1fr; gap: 18px; margin-top: 18px; }}
-    .cards {{ display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; }}
-    .card {{ background: white; border: 1px solid #d9e2ec; border-radius: 8px; padding: 12px; }}
-    .label {{ color: #5f6f82; font-size: 12px; text-transform: uppercase; font-weight: 800; }}
-    .count {{ font-size: 32px; font-weight: 800; }}
-    .note {{ color: #5f6f82; font-size: 13px; }}
-    .pie {{ width: 260px; height: 260px; border-radius: 50%; background:
-      conic-gradient(#28a745 0 {pass_end}%, #dc3545 {pass_end}% {fail_end}%,
-      #f5a623 {fail_end}% {skip_end}%, #d9e2ec {skip_end}% 100%);
-      border: 10px solid white; box-shadow: 0 1px 4px rgba(16,24,40,.14); }}
-    .legend {{ display: grid; gap: 8px; margin-top: 12px; }}
+    :root {{
+      --bg-base: #0b0f19;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glow-success: rgba(16, 185, 129, 0.4);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --gradient-brand: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }}
+    body {{
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }}
+    .container {{ max-width: 1200px; width: 100%; animation: fadeIn 0.8s ease-out; }}
+    @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(20px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+    .bar {{
+      border-left: 4px solid var(--accent-green); background: var(--glass-bg); padding: 24px; border-radius: 16px; border: 1px solid var(--glass-border); border-left-width: 4px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }}
+    .layout {{ display: grid; grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(320px, 1.5fr); gap: 18px; margin-top: 24px; }}
+    .cards {{ display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 12px; margin-top: 24px; }}
+    .card {{ background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 16px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); }}
+    .label {{ color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }}
+    .count {{ font-size: 2.2rem; font-weight: 800; color: #fff; margin-top: 4px; }}
+    .note {{ color: var(--text-muted); font-size: 0.85rem; }}
+    .pie {{ width: 200px; height: 200px; border-radius: 50%; background:
+      conic-gradient(#10b981 0 {pass_end}%, #ef4444 {pass_end}% {fail_end}%,
+      #f5a623 {fail_end}% {skip_end}%, #1e293b {skip_end}% 100%);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4); }}
+    .pie-healing {{ width: 200px; height: 200px; border-radius: 50%; background:
+      conic-gradient(#10b981 0 {healed_pct}%, #1e293b {healed_pct}% 100%);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4); position: relative; }}
+    .pie-healing::after {{ content: '{healed_pct}%'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0b0f19; width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #10b981; box-shadow: inset 0 2px 8px rgba(0,0,0,0.4); }}
+    .legend {{ display: grid; gap: 8px; margin-top: 12px; font-size: 0.9rem; }}
     .swatch {{ display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }}
-    .bars {{ display: grid; gap: 10px; }}
-    .barrow {{ display: grid; grid-template-columns: 88px 1fr 48px; align-items: center; gap: 8px; }}
-    .track {{ height: 16px; background: #e6ebf1; border-radius: 999px; overflow: hidden; }}
+    .bars {{ display: grid; gap: 12px; width: 100%; }}
+    .barrow {{ display: grid; grid-template-columns: 100px 1fr 40px; align-items: center; gap: 8px; font-size: 0.9rem; }}
+    .track {{ height: 12px; background: rgba(255,255,255,0.05); border-radius: 999px; overflow: hidden; }}
     .fill {{ height: 100%; border-radius: 999px; }}
-    .status {{ display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 800; }}
-    .status.pass {{ background: #e8f7ee; color: #196b37; }}
-    .status.fail {{ background: #fdecec; color: #9d1c24; }}
-    .status.skip {{ background: #fff6df; color: #875c00; }}
-    .status.pending {{ background: #e6ebf1; color: #52616f; }}
-    .status.healed {{ background: #e6fff3; color: #087a4a; }}
+    .status {{ display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 800; }}
+    .status.pass {{ background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.2); }}
+    .status.fail {{ background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }}
+    .status.skip {{ background: rgba(245, 166, 35, 0.15); color: #fdbb63; border: 1px solid rgba(245, 166, 35, 0.2); }}
+    .status.healed {{ background: rgba(16, 185, 129, 0.2); color: #6ee7b7; font-weight: 900; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3); }}
+    .write-status {{ display: inline-block; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }}
+    .write-status.written {{ background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.2); }}
+    .write-status.not_written {{ background: rgba(255,255,255,0.05); color: #94a3b8; }}
     .locator {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 18px; background: white; }}
-    th, td {{ border-bottom: 1px solid #e6ebf1; padding: 9px; text-align: left; vertical-align: top; }}
-    th {{ background: #eef3f8; }}
+    table {{
+      width: 100%; border-collapse: separate; border-spacing: 0; background: var(--glass-bg);
+      backdrop-filter: blur(12px); border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); margin-top: 24px;
+    }}
+    th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; vertical-align: top; }}
+    th {{ background: rgba(0, 0, 0, 0.2); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }}
+    tr {{ transition: background 0.2s ease; }}
+    tr:hover {{ background: rgba(255, 255, 255, 0.03); }}
     @media (max-width: 820px) {{ .layout {{ grid-template-columns: 1fr; }} .cards {{ grid-template-columns: repeat(2, 1fr); }} }}
   </style>
 </head>
 <body>
-  <section class="bar">
-    <div class="label">Self-healing execution overview</div>
-    <p><strong>Test result accounting:</strong> Passed + Failed + Skipped = Executed. Healing is a separate locator-repair marker on top of a real test case.</p>
-    <p class="note">CSV: healing_reports/healing_data.csv</p>
-  </section>
-  <section class="cards">
-    <div class="card"><div class="label">Executed</div><div class="count">{self._html_escape(executed)}</div></div>
-    <div class="card"><div class="label">Passed</div><div class="count">{self._html_escape(passed)}</div></div>
-    <div class="card"><div class="label">Failed</div><div class="count">{self._html_escape(failed)}</div></div>
-    <div class="card"><div class="label">Skipped</div><div class="count">{self._html_escape(skipped)}</div></div>
-    <div class="card"><div class="label">Healed test cases</div><div class="count">{self._html_escape(healed_test_cases)}</div><div class="note">{self._html_escape(healed)} locator heal event(s)</div></div>
-  </section>
-  <section class="layout">
-    <div class="card">
-      <div class="label">Test result pie</div>
-      <div class="pie"></div>
-      <div class="legend">
-        <div><span class="swatch" style="background:#28a745"></span>Passed: {self._html_escape(passed)}</div>
-        <div><span class="swatch" style="background:#dc3545"></span>Failed: {self._html_escape(failed)}</div>
-        <div><span class="swatch" style="background:#f5a623"></span>Skipped: {self._html_escape(skipped)}</div>
+  <div class="container">
+    <section class="bar">
+      <div class="label" style="font-size: 0.95rem; font-weight: 800; color: var(--accent-green); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;">Self-Healing Execution Impact Dashboard</div>
+      <p style="margin: 4px 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;"><strong>Test result accounting:</strong> Passed + Failed + Skipped = Executed. Healing is a separate locator-repair marker on top of a real test case.</p>
+      <p class="note" style="margin-top: 4px; color: var(--text-muted); font-size: 0.85rem;">CSV: healing_reports/healing_data.csv</p>
+    </section>
+    
+    <section class="cards">
+      <div class="card" style="border-left: 4px solid #607d8b;"><div class="label">Executed</div><div class="count">{self._html_escape(executed)}</div></div>
+      <div class="card" style="border-left: 4px solid #10b981;"><div class="label">Passed</div><div class="count" style="color: #10b981;">{self._html_escape(passed)}</div></div>
+      <div class="card" style="border-left: 4px solid #ef4444;"><div class="label">Failed</div><div class="count" style="color: #ef4444;">{self._html_escape(failed)}</div></div>
+      <div class="card" style="border-left: 4px solid #f5a623;"><div class="label">Skipped</div><div class="count" style="color: #f5a623;">{self._html_escape(skipped)}</div></div>
+      <div class="card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid var(--accent-green); border-left: 6px solid var(--accent-green);">
+        <div class="label" style="color: #10b981;">Healed test cases</div>
+        <div class="count" style="color: #10b981;">{self._html_escape(healed_test_cases)}</div>
+        <div class="note" style="color: #10b981; font-size: 0.85rem; margin-top: 4px;">{self._html_escape(healed)} locator heal event(s)</div>
       </div>
-      <p class="note">This pie shows only Robot test outcomes.</p>
-    </div>
-    <div class="card">
-      <div class="label">Healing impact</div>
-      <div class="bars">
-        <div class="barrow"><span>Executed</span><div class="track"><div class="fill" style="width:{self._pct(executed, max(executed, healed, 1))}%;background:#607d8b"></div></div><span>{self._html_escape(executed)}</span></div>
-        <div class="barrow"><span>Passed</span><div class="track"><div class="fill" style="width:{self._pct(passed, max(executed, healed, 1))}%;background:#28a745"></div></div><span>{self._html_escape(passed)}</span></div>
-        <div class="barrow"><span>Failed</span><div class="track"><div class="fill" style="width:{self._pct(failed, max(executed, healed, 1))}%;background:#dc3545"></div></div><span>{self._html_escape(failed)}</span></div>
-        <div class="barrow"><span>Skipped</span><div class="track"><div class="fill" style="width:{self._pct(skipped, max(executed, healed, 1))}%;background:#f5a623"></div></div><span>{self._html_escape(skipped)}</span></div>
-        <div class="barrow"><span>Healed TCs</span><div class="track"><div class="fill" style="width:{self._pct(healed_test_cases, max(executed, healed_test_cases, 1))}%;background:#168f65"></div></div><span>{self._html_escape(healed_test_cases)}</span></div>
-        <div class="barrow"><span>Heal events</span><div class="track"><div class="fill" style="width:{self._pct(healed, max(executed, healed, 1))}%;background:#13a66b"></div></div><span>{self._html_escape(healed)}</span></div>
+    </section>
+    
+    <section class="layout">
+      <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 320px;">
+        <div class="label" style="align-self: flex-start; margin-bottom: 16px;">Test Result Breakdown</div>
+        <div class="pie"></div>
+        <div class="legend" style="margin-top: 20px; align-self: flex-start; width: 100%;">
+          <div style="display: flex; align-items: center; margin-bottom: 4px;"><span class="swatch" style="background:#10b981"></span>Passed: {self._html_escape(passed)}</div>
+          <div style="display: flex; align-items: center; margin-bottom: 4px;"><span class="swatch" style="background:#ef4444"></span>Failed: {self._html_escape(failed)}</div>
+          <div style="display: flex; align-items: center;"><span class="swatch" style="background:#f5a623"></span>Skipped: {self._html_escape(skipped)}</div>
+        </div>
       </div>
-      <p class="note">A test case can be both Passed and Healed. Healed test cases are not added to Executed; they are a marker on existing test case IDs.</p>
-    </div>
-  </section>
-  <table>
-    <thead><tr><th>#</th><th>Test Case ID</th><th>Test</th><th>Result</th><th>Healed</th><th>Original locator</th><th>Healed locator</th><th>Score</th><th>Candidates</th><th>Files rewritten</th><th>Highlighted screenshot</th></tr></thead>
-    <tbody>{''.join(rows)}</tbody>
-  </table>
+      
+      <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 320px; background: rgba(16, 185, 129, 0.02); border-color: rgba(16, 185, 129, 0.15);">
+        <div class="label" style="align-self: flex-start; margin-bottom: 16px; color: #10b981;">Healing Rescue Rate</div>
+        <div class="pie-healing"></div>
+        <div class="legend" style="margin-top: 20px; align-self: flex-start; width: 100%;">
+          <div style="font-weight: 700; color: #10b981; display: flex; align-items: center; margin-bottom: 4px;"><span class="swatch" style="background:#10b981"></span>Healed: {self._html_escape(healed_test_cases)}</div>
+          <div style="display: flex; align-items: center;"><span class="swatch" style="background:#1e293b"></span>Healing not required: {self._html_escape(unhealed_count)}</div>
+        </div>
+      </div>
+      
+      <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 320px;">
+        <div class="label" style="margin-bottom: 16px;">Execution vs Healing Impact</div>
+        <div class="bars">
+          <div class="barrow"><span>Executed</span><div class="track"><div class="fill" style="width:{self._pct(executed, max(executed, healed, 1))}%;background:#607d8b"></div></div><span>{self._html_escape(executed)}</span></div>
+          <div class="barrow"><span>Passed</span><div class="track"><div class="fill" style="width:{self._pct(passed, max(executed, healed, 1))}%;background:#10b981"></div></div><span>{self._html_escape(passed)}</span></div>
+          <div class="barrow"><span>Failed</span><div class="track"><div class="fill" style="width:{self._pct(failed, max(executed, healed, 1))}%;background:#ef4444"></div></div><span>{self._html_escape(failed)}</span></div>
+          <div class="barrow"><span>Skipped</span><div class="track"><div class="fill" style="width:{self._pct(skipped, max(executed, healed, 1))}%;background:#f5a623"></div></div><span>{self._html_escape(skipped)}</span></div>
+          
+          <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 8px 0;"></div>
+          
+          <div class="barrow"><span style="color:#10b981; font-weight:800;">Healed TCs</span><div class="track"><div class="fill" style="width:{self._pct(healed_test_cases, max(executed, healed_test_cases, 1))}%;background:#10b981"></div></div><span style="color:#10b981; font-weight:800;">{self._html_escape(healed_test_cases)}</span></div>
+          <div class="barrow"><span style="color:#10b981; font-weight:800;">Heal events</span><div class="track"><div class="fill" style="width:{self._pct(healed, max(executed, healed, 1))}%;background:#10b981"></div></div><span style="color:#10b981; font-weight:800;">{self._html_escape(healed)}</span></div>
+        </div>
+      </div>
+    </section>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Test Case ID</th>
+          <th>Test</th>
+          <th>Result</th>
+          <th>Healed</th>
+          <th>Original locator</th>
+          <th>Healed locator</th>
+          <th>Score</th>
+          <th>Selected source</th>
+          <th>Write Status</th>
+          <th>Files Written (Lines)</th>
+          <th>Candidates</th>
+          <th>AI</th>
+          <th>Snapshot/history</th>
+          <th>Non-AI</th>
+          <th>Occurrences rewritten</th>
+          <th>Highlighted screenshot</th>
+        </tr>
+      </thead>
+      <tbody>
+        {''.join(rows)}
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>"""
             with open(html_path, "w", encoding="utf-8") as f:
@@ -1943,6 +2354,16 @@ class HealingSelenium:
                 "html_chars_used": len(html_excerpt),
                 "previous_heal_context": previous_heal_context,
             }
+        except requests.exceptions.Timeout:
+            msg = f"[Healing] ❌ Ollama error: Request to {self.ollama_url} timed out. The model may be too slow or not running."
+            print(msg)
+            self.last_ollama_error = msg
+            return None
+        except requests.exceptions.ConnectionError:
+            msg = f"[Healing] ❌ Ollama error: Connection refused. Ensure the Ollama server is running at {self.ollama_url}."
+            print(msg)
+            self.last_ollama_error = msg
+            return None
         except Exception as e:
             preview = (content or "")[:200].replace("\n", " ")
             print(f"[Healing] ❌ Ollama error: {e}\n response preview: {preview}")
@@ -2009,30 +2430,48 @@ class HealingSelenium:
         files_changed = 0
         occurrences_replaced = 0
         changed_files: List[Dict[str, Any]] = []
+        written_files_with_lines: List[str] = []
         for path in sorted(file_list):
             try:
                 if os.path.getsize(path) > max_bytes:
                     continue
                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                    text = f.read()
-                original_text = text
+                    lines = f.readlines()
                 ext = os.path.splitext(path)[1].lower()
                 count = 0
-
+                line_numbers = []
+                new_lines = []
+                
                 # Prefer quoted replacements where applicable (preserve quotes)
-                def _quoted_sub(m: re.Match) -> str:  # type: ignore[name-defined]
+                def _quoted_sub(m: re.Match) -> str:
                     q = m.group("q") or ""
                     return f"{q}{new_locator}{q}"
+                
+                for idx, line in enumerate(lines, 1):
+                    new_line = line
+                    nl, n1 = quoted.subn(_quoted_sub, new_line)
+                    n2 = 0
+                    if ext in (".robot", ".resource", ".txt"):
+                        nl, n2 = ws_bound.subn(new_locator, nl)
+                    total_replacements = n1 + n2
+                    if total_replacements > 0:
+                        count += total_replacements
+                        line_numbers.append(idx)
+                        # Strip any existing Healed from comment to prevent accumulation/duplication
+                        nl_clean = re.sub(r'\s*#\s*Healed\s+from\s+.*$', '', nl, flags=re.I)
+                        stripped_line = nl_clean.rstrip("\r\n").rstrip()
+                        line_ending = nl_clean[len(nl_clean.rstrip("\r\n")):]
+                        comment = f"Healed from '{old_locator}'"
+                        if ext in (".robot", ".resource"):
+                            new_line = f"{stripped_line}    # {comment}{line_ending}"
+                        elif ext in (".py", ".yaml", ".yml", ".txt"):
+                            new_line = f"{stripped_line}  # {comment}{line_ending}"
+                        else:
+                            new_line = nl_clean
+                    new_lines.append(new_line)
 
-                text, n1 = quoted.subn(_quoted_sub, text)
-                count += n1
-
-                # Also try whitespace-bound for plain occurrences in .robot/.txt
-                if ext in (".robot", ".resource", ".txt"):
-                    text, n2 = ws_bound.subn(new_locator, text)
-                    count += n2
-
-                if count > 0 and text != original_text:
+                if count > 0:
+                    text = "".join(new_lines)
                     if not dry_run:
                         backup_path = f"{path}.bak.{datetime.now().strftime('%Y%m%d%H%M%S')}"
                         try:
@@ -2043,7 +2482,14 @@ class HealingSelenium:
                             f.write(text)
                     files_changed += 1
                     occurrences_replaced += count
-                    changed_files.append({"path": os.path.relpath(path, root), "replacements": count})
+                    rel_path = os.path.relpath(path, root)
+                    changed_files.append({
+                        "path": rel_path,
+                        "replacements": count,
+                        "line_numbers": line_numbers
+                    })
+                    for lnum in line_numbers:
+                        written_files_with_lines.append(f"{rel_path}:{lnum}")
             except Exception:
                 continue
 
@@ -2052,6 +2498,7 @@ class HealingSelenium:
             "files_changed": files_changed,
             "occurrences_replaced": occurrences_replaced,
             "changed_files": changed_files,
+            "written_files_with_lines": written_files_with_lines,
             "dry_run": dry_run,
         }
 
@@ -2076,6 +2523,7 @@ class HealingSelenium:
             self._sl.click_element(locator)
             return
         except Exception as e:
+            original_error = e
             print(f"[Healing] ⚠️ Failed: {e}")
             if self.capture_on_fail:
                 self._capture_page_artifacts("locator_not_found_click", locator)
@@ -2106,7 +2554,14 @@ class HealingSelenium:
             # Healing could not find a working locator
             if self.capture_on_fail:
                 self._capture_page_artifacts("healing_failed_click", locator)
-            raise
+            if getattr(self, "last_ollama_error", None):
+                try:
+                    from robot.api import logger
+                    logger.console(self.last_ollama_error)
+                except ImportError:
+                    pass
+                self.last_ollama_error = None
+            raise original_error
 
     def input_text(self, locator: str, text: str):  # noqa: PLR0911
         """Healable version of Input Text"""
@@ -2115,6 +2570,7 @@ class HealingSelenium:
             self._sl.input_text(locator, text)
             return
         except Exception as e:
+            original_error = e
             print(f"[Healing] ⚠️ Failed: {e}")
             if self.capture_on_fail:
                 self._capture_page_artifacts("locator_not_found_input", locator)
@@ -2144,7 +2600,14 @@ class HealingSelenium:
         else:
             if self.capture_on_fail:
                 self._capture_page_artifacts("healing_failed_input", locator)
-            raise
+            if getattr(self, "last_ollama_error", None):
+                try:
+                    from robot.api import logger
+                    logger.console(self.last_ollama_error)
+                except ImportError:
+                    pass
+                self.last_ollama_error = None
+            raise original_error
 
     def validate_locator(  # noqa: PLR0913
         self,
@@ -2230,6 +2693,25 @@ class HealingSelenium:
     def get_auto_healing_status(self) -> bool:
         """Return current Auto-Heal boolean status."""
         return self.auto_heal
+
+    def enable_ai_healing(self):
+        """Enable AI/Ollama locator suggestions at runtime."""
+        self.ai_healing = True
+        print("[Healing] AI-Healing enabled.")
+
+    def disable_ai_healing(self):
+        """Disable AI/Ollama locator suggestions at runtime."""
+        self.ai_healing = False
+        print("[Healing] AI-Healing disabled.")
+
+    def set_ai_healing(self, value: Any):
+        """Set AI/Ollama locator suggestions ON/OFF (accepts true/false)."""
+        self.ai_healing = self._to_bool(value, self.ai_healing)
+        print(f"[Healing] AI-Healing set to: {self.ai_healing}")
+
+    def get_ai_healing_status(self) -> bool:
+        """Return current AI-Healing boolean status."""
+        return self.ai_healing
 
     def enable_auto_rewrite(self):
         """Enable automatic source rewrite at runtime."""
@@ -2401,6 +2883,8 @@ class HealingSelenium:
 
     def _previous_heal_candidates(self, previous_heal_context: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Turn previous healed locators into normal candidates for the scorer."""
+        if not getattr(self, "heal_from_history", True):
+            return []
         if not previous_heal_context:
             return []
 
@@ -2438,6 +2922,264 @@ class HealingSelenium:
                 break
         return candidates
 
+    def _xpath_literal(self, value: str) -> str:
+        if "'" not in value:
+            return f"'{value}'"
+        if '"' not in value:
+            return f'"{value}"'
+        parts = value.split("'")
+        return "concat(" + ", \"'\", ".join(f"'{part}'" for part in parts) + ")"
+
+    def _non_ai_candidate(self, locator: str, reason: str, weak: bool = False) -> Dict[str, Any]:
+        candidate: Dict[str, Any] = {
+            "type": "xpath",
+            "locator": locator,
+            "reason": reason,
+            "source": "non-ai",
+        }
+        if weak:
+            candidate["weak"] = True
+        return candidate
+
+    def _parse_broken_locator(self, broken_locator: str) -> Dict[str, Any]:
+        """
+        Extract tag name, attributes, and position/index from a broken locator.
+        """
+        raw = str(broken_locator or "").strip()
+        lowered = raw.lower()
+        info = {"tag": "*", "attrs": {}, "position": None}
+
+        # Handle xpath prefix
+        xpath_str = raw
+        if lowered.startswith(("xpath=", "xpath:")):
+            xpath_str = raw.split("=", 1)[1] if lowered.startswith("xpath=") else raw.split(":", 1)[1]
+
+        # Extract position from xpath: e.g., (//input)[2]
+        pos_match = re.search(r"\)\[(\d+)\]$", xpath_str)
+        if pos_match:
+            info["position"] = int(pos_match.group(1))
+            xpath_str = re.sub(r"^\((.*)\)\[\d+\]$", r"\1", xpath_str)
+
+        # Extract tag name: e.g. //input or //div
+        tag_match = re.search(r"//([\w:-]+)", xpath_str)
+        if tag_match:
+            info["tag"] = tag_match.group(1)
+
+        # Extract attributes: e.g., @id='username', @class='foo'
+        for match in re.finditer(r"@([\w:-]+)\s*=\s*(['\"])(.*?)\2", xpath_str):
+            info["attrs"][match.group(1)] = match.group(3)
+
+        # Also parse simple ID or name formats
+        if lowered.startswith(("id=", "id:")):
+            val = raw.split("=", 1)[1] if lowered.startswith("id=") else raw.split(":", 1)[1]
+            info["attrs"]["id"] = val
+        elif lowered.startswith(("name=", "name:")):
+            val = raw.split("=", 1)[1] if lowered.startswith("name=") else raw.split(":", 1)[1]
+            info["attrs"]["name"] = val
+
+        return info
+
+    def _non_ai_locator_candidates(self, broken_locator: str) -> List[Dict[str, Any]]:
+        """
+        Generate deterministic, non-LLM candidates using advanced rule-based healing.
+        """
+        if not getattr(self, "non_ai_healing", False):
+            return []
+
+        raw = str(broken_locator or "").strip()
+        lowered = raw.lower()
+        candidates: List[Dict[str, Any]] = []
+
+        # Feature 5: Learn from past successful heals (fuzzy history lookup)
+        if os.path.exists(self.healed_file):
+            try:
+                with open(self.healed_file, "r", encoding="utf-8") as f:
+                    past_heals = json.load(f)
+                past_broken_locators = list(past_heals.keys())
+                similar_broken = difflib.get_close_matches(broken_locator, past_broken_locators, n=3, cutoff=0.8)
+                for sim_broken in similar_broken:
+                    entry = past_heals[sim_broken]
+                    healed_entry = entry.get("current") or {}
+                    healed_loc = healed_entry.get("locator")
+                    if healed_loc:
+                        candidates.append(
+                            self._non_ai_candidate(
+                                healed_loc,
+                                f"non-AI learned from past heal of '{sim_broken}' -> '{healed_loc}'"
+                            )
+                        )
+            except Exception as exc:
+                print(f"[Healing] Failed to load past heals for learning: {exc}")
+
+        # Feature 1: Extract tag names, attributes and position
+        info = self._parse_broken_locator(broken_locator)
+        target_tag = info["tag"] or "*"
+        target_attrs = info["attrs"]
+
+        # Access WebDriver to inspect DOM and generate smart relative/sibling/parent candidates
+        drv = getattr(self._sl, "driver", None)
+        if drv:
+            try:
+                # Derive hints to filter the query
+                hints = self._derive_locator_hints(broken_locator)
+                meaningful_hints = [h for h in hints if len(h) >= 2 and not h.isdigit()]
+                
+                # Build an xpath that targets elements having similarity in id, name, class, placeholder, or text
+                conditions = []
+                for hint in meaningful_hints[:3]: # keep to first 3 most relevant hints to avoid massive query
+                    literal = self._xpath_literal(hint)
+                    conditions.append(f"contains(@id, {literal})")
+                    conditions.append(f"contains(@name, {literal})")
+                    conditions.append(f"contains(@class, {literal})")
+                    conditions.append(f"contains(@placeholder, {literal})")
+                    conditions.append(f"contains(text(), {literal})")
+
+                tag_expr = target_tag if target_tag != "*" else "*"
+                found_elems = []
+                
+                if conditions:
+                    query = f"//{tag_expr}[{' or '.join(conditions)}]"
+                    found_elems = drv.find_elements("xpath", query)
+                
+                # Fallback to general elements if no hits or no conditions
+                if not found_elems:
+                    fallback_expr = target_tag if target_tag != "*" else "input | //button | //a | //select"
+                    found_elems = drv.find_elements("xpath", f"//{fallback_expr}")
+
+                # Keep up to 10 candidate elements to process
+                for el in found_elems[:10]:
+                    el_id = el.get_attribute("id")
+                    el_name = el.get_attribute("name")
+                    el_class = el.get_attribute("class")
+                    el_text = (el.text or "").strip()
+                    el_tag = el.tag_name.lower()
+
+                    # Feature 2: Generate candidates using id, text and classes
+                    if el_id:
+                        candidates.append(self._non_ai_candidate(f"id={el_id}", f"non-AI ID candidate: id={el_id}"))
+                    if el_name:
+                        candidates.append(self._non_ai_candidate(f"name={el_name}", f"non-AI name candidate: name={el_name}"))
+                    if el_text and len(el_text) < 50:
+                        candidates.append(self._non_ai_candidate(f"xpath=//{el_tag}[text()={self._xpath_literal(el_text)}]", f"non-AI text candidate: text={el_text}"))
+                        candidates.append(self._non_ai_candidate(f"xpath=//{el_tag}[contains(text(),{self._xpath_literal(el_text)})]", f"non-AI text contains candidate"))
+                    if el_class:
+                        for cls in el_class.split():
+                            if cls and not cls.isdigit():
+                                candidates.append(self._non_ai_candidate(f"css={el_tag}.{cls}", f"non-AI class candidate: css={el_tag}.{cls}"))
+
+                    # Feature 3: Generate locators from stable parent nodes
+                    try:
+                        parent = el.find_element("xpath", "./parent::*")
+                        parent_id = parent.get_attribute("id")
+                        parent_tag = parent.tag_name.lower()
+                        if parent_id:
+                            candidates.append(
+                                self._non_ai_candidate(
+                                    f"xpath=//{parent_tag}[@id='{parent_id}']//{el_tag}",
+                                    f"non-AI stable parent candidate: parent id={parent_id}"
+                                )
+                            )
+                    except Exception:
+                        pass
+
+                    # Feature 4: Generate sibling and relative locators
+                    try:
+                        # Preceding sibling label (very common for form inputs)
+                        labels = el.find_elements("xpath", "./preceding-sibling::label")
+                        for label in labels[:2]:
+                            lbl_text = (label.text or "").strip()
+                            if lbl_text:
+                                candidates.append(
+                                    self._non_ai_candidate(
+                                        f"xpath=//label[contains(text(),{self._xpath_literal(lbl_text)})]/following-sibling::{el_tag}",
+                                        f"non-AI sibling label candidate: label={lbl_text}"
+                                    )
+                                )
+                    except Exception:
+                        pass
+
+            except Exception as exc:
+                print(f"[Healing] Non-AI DOM query failed: {exc}")
+
+        # Fallbacks (legacy rules)
+        def add_contains(attr: str, value: str, reason: str):
+            if value:
+                candidates.append(
+                    self._non_ai_candidate(
+                        f"xpath=//*[contains(@{attr},{self._xpath_literal(value)})]",
+                        reason,
+                    )
+                )
+
+        def add_starts(attr: str, value: str, reason: str):
+            prefix = value[:4]
+            if prefix:
+                candidates.append(
+                    self._non_ai_candidate(
+                        f"xpath=//*[starts-with(@{attr},{self._xpath_literal(prefix)})]",
+                        reason,
+                    )
+                )
+
+        if lowered.startswith(("id=", "id:")):
+            value = raw.split("=", 1)[1] if raw.lower().startswith("id=") else raw.split(":", 1)[1]
+            add_contains("id", value, "non-AI id contains rule")
+            add_starts("id", value, "non-AI id prefix rule")
+        elif lowered.startswith(("name=", "name:")):
+            value = raw.split("=", 1)[1] if raw.lower().startswith("name=") else raw.split(":", 1)[1]
+            add_contains("name", value, "non-AI name contains rule")
+            add_starts("name", value, "non-AI name prefix rule")
+        elif lowered.startswith(("css=", "css:")):
+            value = raw.split("=", 1)[1] if lowered.startswith("css=") else raw.split(":", 1)[1]
+            m_id = re.search(r"#([\w-]+)", value)
+            if m_id:
+                add_contains("id", m_id.group(1), "non-AI CSS id fragment rule")
+            m_name = re.search(r"\[name=['\"]?([\w-]+)['\"]?\]", value)
+            if m_name:
+                add_contains("name", m_name.group(1), "non-AI CSS name fragment rule")
+        elif lowered.startswith(("xpath=", "xpath:")) or raw.startswith(("/", "(", ".//", "//")):
+            for attr in ("id", "name"):
+                for match in re.finditer(rf"@{attr}\s*=\s*(['\"])(.*?)\1", raw):
+                    value = match.group(2)
+                    add_contains(attr, value, f"non-AI XPath {attr} contains rule")
+                    add_starts(attr, value, f"non-AI XPath {attr} prefix rule")
+
+        # Position suffix if extracted
+        if info["position"]:
+            pos = info["position"]
+            pos_candidates = []
+            for c in candidates:
+                loc = c.get("locator")
+                if loc and loc.startswith("xpath="):
+                    xpath_part = loc.split("=", 1)[1]
+                    pos_candidates.append(
+                        self._non_ai_candidate(
+                            f"xpath=({xpath_part})[{pos}]",
+                            f"{c.get('reason')} (position {pos})"
+                        )
+                    )
+            candidates.extend(pos_candidates)
+
+        candidates.append(
+            self._non_ai_candidate(
+                "xpath=//button | //a | //span",
+                "non-AI generic clickable/text fallback",
+                weak=True,
+            )
+        )
+
+        out: List[Dict[str, Any]] = []
+        seen = set()
+        for candidate in candidates:
+            key = (candidate.get("type"), candidate.get("locator"))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(candidate)
+            if len(out) >= 15:
+                break
+        return out
+
     def _record_healing(
         self,
         old_locator: str,
@@ -2457,6 +3199,8 @@ class HealingSelenium:
             "locator": suggestion.get("locator"),
             "updated_at": now,
         }
+        if suggestion.get("source"):
+            new_entry["source"] = suggestion.get("source")
         if suggestion.get("score") is not None:
             new_entry["score"] = suggestion.get("score")
         if score_report:
@@ -2494,17 +3238,22 @@ class HealingSelenium:
             print("[Healing] ❌ No Selenium driver found.")
             return None
 
-        ai_result = self._ask_ollama_for_new_locator(
-            locator,
-            driver.page_source,
-            previous_heal_context=previous_heal_context,
-        )
+        ai_result = None
+        if self.ai_healing:
+            ai_result = self._ask_ollama_for_new_locator(
+                locator,
+                driver.page_source,
+                previous_heal_context=previous_heal_context,
+            )
+        else:
+            print("[Healing] AI healing disabled; skipping Ollama candidates.")
         ai_candidates = ai_result.get("candidates", []) if ai_result else []
         history_candidates = self._previous_heal_candidates(previous_heal_context)
+        non_ai_candidates = self._non_ai_locator_candidates(locator)
 
         candidates: List[Dict[str, Any]] = []
         seen = set()
-        for candidate in ai_candidates + history_candidates:
+        for candidate in ai_candidates + history_candidates + non_ai_candidates:
             key = (candidate.get("type"), candidate.get("locator"))
             if key in seen:
                 continue
@@ -2521,7 +3270,10 @@ class HealingSelenium:
                 html_chars_used,
             )
             score_report["ai_candidate_count"] = len(ai_candidates)
+            score_report["ai_enabled"] = self.ai_healing
             score_report["history_candidate_count"] = len(history_candidates)
+            score_report["non_ai_candidate_count"] = len(non_ai_candidates)
+            score_report["non_ai_enabled"] = self.non_ai_healing
             if previous_heal_context:
                 score_report["previous_heal_context"] = previous_heal_context
             self._print_locator_score_report(score_report)
@@ -2537,6 +3289,7 @@ class HealingSelenium:
                 "type": selected.get("type"),
                 "locator": selected.get("normalized_locator"),
                 "score": selected.get("score"),
+                "source": selected.get("source"),
             }
             rewrite_stats = self._record_healing(locator, suggestion, score_report=score_report)
             self._publish_healing_report(
@@ -2573,7 +3326,8 @@ class HealingSelenium:
                 f"'{selected.get('normalized_locator')}' with score {selected.get('score')} "
                 f"from {score_report.get('candidate_count')} candidate(s) "
                 f"({score_report.get('ai_candidate_count', 0)} AI, "
-                f"{score_report.get('history_candidate_count', 0)} history)."
+                f"{score_report.get('history_candidate_count', 0)} snapshot/history, "
+                f"{score_report.get('non_ai_candidate_count', 0)} non-AI)."
             )
         if rewrite_stats is not None:
             reason_parts.append(
@@ -2588,12 +3342,15 @@ class HealingSelenium:
             must_fail = True
 
         if must_fail:
-            msg = "\n".join(reason_parts + [
+            detailed_msg = "\n".join(reason_parts + [
                 "Failing the test intentionally so the incorrect coded locator is fixed and committed."
             ])
+            short_msg = f"Auto-healed '{old_locator}' → '{new_locator}'. Failing intentionally to enforce code fix."
             try:
-                BuiltIn().fail(msg)
+                from robot.libraries.BuiltIn import BuiltIn
+                BuiltIn().log(detailed_msg, "INFO")
+                BuiltIn().fail(short_msg)
             except Exception as exc:
                 # In case we're not under Robot execution context
-                raise AssertionError(msg) from exc
+                raise AssertionError(short_msg) from exc
 # End of class

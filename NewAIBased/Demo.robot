@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation       Collection of common keywords to use across tests/suites
 # Library             Browser     timeout=150s
-Library    HealingSelenium.py    model=mistral:latest   auto_heal=${TRUE}    auto_rewrite=${TRUE}
+Library    HealingSelenium.py    model=mistral:latest   auto_heal=${TRUE}    auto_rewrite=${TRUE}    ai=${FALSE}    non_ai=${TRUE}    heal_from_history=${FALSE}
 Library    String
 Library    Collections
 Library    OperatingSystem
